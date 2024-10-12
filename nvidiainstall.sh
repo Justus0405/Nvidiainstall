@@ -2,7 +2,7 @@
 
 # //////////////////////////////////////////////////////////////////////////////////////////
 # Nvidiainstall by Justus0405
-# Source : https://github.com/Justus0405/Arch-Wiki/blob/main/src/Nvidia/nvidiainstall.sh
+# Source : https://github.com/Justus0405/Nvidiainstall
 # License: MIT
 # //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +21,6 @@ ERROR="${RED}Error:${ENDCOLOR}"
 SECTION="${YELLOW}[!]"
 INFO="${CYAN}[i]"
 
-set -e  # Exit immediately if a command exits with a non-zero status
 clear
 
 # Function to handle script arguments
