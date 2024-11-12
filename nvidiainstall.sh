@@ -546,7 +546,7 @@ remove_mkinitcpio() {
             echo -e "${INFO} kms hook is already present."
         else
             echo -e "${INFO} Adding kms hook"
-            sudo 's/modconf/& kms/' "$MKINITCPIO_CONF"
+            sudo sed -i 's/modconf/& kms/' "$MKINITCPIO_CONF"
         fi
 
         echo -e "${SUCCSESS} mkinitcpio.conf updated."
