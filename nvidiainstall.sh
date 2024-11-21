@@ -158,6 +158,9 @@ conrfirm_installation() {
     # This is just a sanity check for the user
     # Also used to initiate the logging if
     # DEBUG_MODE is set to true
+    # The weird [yY][eE][sS]|[yY] syntax makes it
+    # possible to answer either with y or yes in
+    # any capitalization
     clear
     echo -e "${INFO} This script will install NVIDIA drivers and modify system configurations."
     echo -e "${INFO} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
@@ -215,6 +218,9 @@ confirm_uninstallation() {
     # This is just a sanity check for the user, Part 2
     # Also used to initiate the logging if
     # DEBUG_MODE is set to true
+    # The weird [yY][eE][sS]|[yY] syntax makes it
+    # possible to answer either with y or yes in
+    # any capitalization
     clear
     echo -e "${INFO} This will completely uninstall all NVIDIA drivers and modify system configurations."
     echo -e "${INFO} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
@@ -513,7 +519,7 @@ remove_nvidia_packages() {
     # Uninstall the nvidia drivers, configs and unused dependencies
     #
     echo -e "${SECTION} Uninstalling NVIDIA packages..."
-    sudo pacman -Rns nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia
+    sudo pacman -Rn nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia
 }
 
 remove_mkinitcpio() {
