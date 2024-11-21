@@ -519,7 +519,7 @@ remove_nvidia_packages() {
     # Uninstall the nvidia drivers, configs and unused dependencies
     #
     echo -e "${SECTION} Uninstalling NVIDIA packages..."
-    sudo pacman -Rn nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia
+    sudo pacman -Rn nvidia-dkms nvidia-settings
 }
 
 remove_mkinitcpio() {
