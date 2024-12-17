@@ -6,20 +6,22 @@
 # License: MIT
 # //////////////////////////////////////////////////////////////////////////////////////////
 
-VERSION="1.0"
+export VERSION="1.1"
 
 # Color variables
-RED="\e[1;31m"
-GREEN="\e[1;32m"
-YELLOW="\e[1;33m"
-CYAN="\e[1;36m"
-ENDCOLOR="\e[0m"
+export RED="\e[1;31m"
+export GREEN="\e[1;32m"
+export YELLOW="\e[1;33m"
+export CYAN="\e[1;36m"
+export GRAY="\e[1;90m"
+export ENDCOLOR="\e[0m"
 
 # Info variables
-SUCCSESS="${GREEN}[✓]${ENDCOLOR}"
-ERROR="${RED}Error:${ENDCOLOR}"
-SECTION="${YELLOW}[!]${ENDCOLOR}"
-INFO="${CYAN}[i]${ENDCOLOR}"
+export SUCCSESS="${GRAY}[${GREEN}✓${GRAY}]${ENDCOLOR}"
+export ERROR="${RED}Error:${ENDCOLOR}"
+export WARNING="${GRAY}[${RED}!${GRAY}]${ENDCOLOR}"
+export SECTION="${GRAY}[${YELLOW}!${GRAY}]${ENDCOLOR}"
+export INFO="${GRAY}[${CYAN}i${GRAY}]${ENDCOLOR}"
 
 #
 # CHECKS
@@ -31,27 +33,27 @@ check_args() {
     #
     while [[ "$1" != "" ]]; do
         case "$1" in
-            -h | --help)
-                echo -e "Usage: nvidiainstall.sh [options]"
-                echo -e ""
-                echo -e "Options:"
-                echo -e "  -h, --help      Show this help message"
-                echo -e "  -d, --debug     Run the script with logging"
-                echo -e "  -f, --force     Disable nvidia check and force install"
-                exit 0
-                ;;
-            -d | --debug)
-                LOG_FILE="/var/log/nvidia_install.log"
-                DEBUG_MODE=true
-                ;;
-            -f | --force)
-                FORCED_MODE=true
-                ;;
-            *)
-                echo -e "Unknown option: $1"
-                echo -e "Use -h or --help for help."
-                exit 0
-                ;;
+        -h | --help)
+            echo -e "Usage: nvidiainstall.sh [option] [option]"
+            echo -e ""
+            echo -e "Options:"
+            echo -e "  -h, --help      Show this help message"
+            echo -e "  -d, --debug     Run the script with logging"
+            echo -e "  -f, --force     Disable nvidia check and force install"
+            exit 0
+            ;;
+        -d | --debug)
+            export LOG_FILE="/var/log/nvidia_install.log"
+            export DEBUG_MODE=true
+            ;;
+        -f | --force)
+            export FORCED_MODE=true
+            ;;
+        *)
+            echo -e "Unknown option: $1"
+            echo -e "Use -h or --help for help."
+            exit 0
+            ;;
         esac
         shift
     done
@@ -72,14 +74,11 @@ check_sudo() {
     # or it may be just a skill issue ¯\_(ツ)_/¯
     if ! groups root | grep -q "\bwheel\b"; then
         echo -e "${INFO} Root is not in the wheel group. Adding root to the wheel group."
-        usermod -aG wheel root
-
-        if [[ $? -eq 0 ]]; then
-            echo -e "${INFO} Root has been successfully added to the wheel group."
-        else
+        usermod -aG wheel root || {
             echo -e "${ERROR} Failed to add root to the wheel group."
             exit 1
-        fi
+        }
+        echo -e "${INFO} Root has been successfully added to the wheel group."
     else
         echo -e "${INFO} Root is already in the wheel group."
     fi
@@ -108,14 +107,14 @@ show_menu() {
     # when the selected option finished running
     clear
     echo -e "\t┌──────────────────────────────────────────────────┐"
+    if [[ "$DEBUG_MODE" = true ]]; then
+        echo -e "\t│ [i] Debug Mode Enabled                           │"
+    fi
+    if [[ "$FORCED_MODE" = true ]]; then
+        echo -e "\t│ [i] Forced Mode Enabled                          │"
+    fi
     echo -e "\t│                                                  │"
     echo -e "\t│ Choose option:                                   │"
-    if [[ "$DEBUG_MODE" = true ]]; then
-    echo -e "\t│ [i] Debug Mode Enabled                           │"
-    fi
-     if [[ "$FORCED_MODE" = true ]]; then
-    echo -e "\t│ [i] Forced Mode Enabled                          │"
-    fi
     echo -e "\t│                                                  │"
     echo -e "\t│ [1] Install                                      │"
     echo -e "\t│ [2] Uninstall                                    │"
@@ -132,22 +131,22 @@ show_menu() {
     read -rsn1 option
 
     case "$option" in
-        "1")
-            conrfirm_installation
-            ;;
-        "2")
-            confirm_uninstallation
-            ;;
-        "3")
-            show_device_information
-            ;;
-        "4")
-            show_about
-            ;;
-        "0")
-            clear
-            exit 0
-            ;;
+    "1")
+        conrfirm_installation
+        ;;
+    "2")
+        confirm_uninstallation
+        ;;
+    "3")
+        show_device_information
+        ;;
+    "4")
+        show_about
+        ;;
+    "0")
+        clear
+        exit 0
+        ;;
     esac
 
     # Loop back to menu after an option is handled
@@ -166,18 +165,18 @@ conrfirm_installation() {
     echo -e "${INFO} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
-        [yY][eE][sS]|[yY])
-            echo -e "${GREEN}Proceeding with installation...${ENDCOLOR}"
-            if [[ "$DEBUG_MODE" = true ]]; then
-                echo -e "${INFO} Started logging at $LOG_FILE${ENDCOLOR}"
-                exec > >(tee -i "$LOG_FILE") 2>&1
-            fi
-            installation_steps
-            ;;
-        *)
-            echo -e "${RED}Installation cancelled.${ENDCOLOR}"
-            exit 0
-            ;;
+    [yY][eE][sS] | [yY])
+        echo -e "${GREEN}Proceeding with installation...${ENDCOLOR}"
+        if [[ "$DEBUG_MODE" = true ]]; then
+            echo -e "${INFO} Started logging at $LOG_FILE${ENDCOLOR}"
+            exec > >(tee -i "$LOG_FILE") 2>&1
+        fi
+        installation_steps
+        ;;
+    *)
+        echo -e "${RED}Installation cancelled.${ENDCOLOR}"
+        exit 0
+        ;;
     esac
 }
 
@@ -226,18 +225,18 @@ confirm_uninstallation() {
     echo -e "${INFO} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
-        [yY][eE][sS]|[yY])
-            echo -e "${GREEN}Proceeding with uninstallation...${ENDCOLOR}"
-            if [[ "$DEBUG_MODE" = true ]]; then
-                echo -e "${INFO} Started logging at $LOG_FILE${ENDCOLOR}"
-                exec > >(tee -i "$LOG_FILE") 2>&1
-            fi
-            uninstallation_steps
-            ;;
-        *)
-            echo -e "${RED}Uninstallation cancelled.${ENDCOLOR}"
-            exit 0
-            ;;
+    [yY][eE][sS] | [yY])
+        echo -e "${GREEN}Proceeding with uninstallation...${ENDCOLOR}"
+        if [[ "$DEBUG_MODE" = true ]]; then
+            echo -e "${INFO} Started logging at $LOG_FILE${ENDCOLOR}"
+            exec > >(tee -i "$LOG_FILE") 2>&1
+        fi
+        uninstallation_steps
+        ;;
+    *)
+        echo -e "${RED}Uninstallation cancelled.${ENDCOLOR}"
+        exit 0
+        ;;
     esac
 }
 
@@ -288,8 +287,8 @@ show_device_information() {
     read -rsn1 option
 
     case "$option" in
-        *)
-            ;;
+    *) ;;
+
     esac
 }
 
@@ -309,7 +308,7 @@ show_about() {
     echo -e "\tContributers:"
 
     echo "$github_response" | grep '"login":' | awk -F '"' '{print $4}' | while read -r contributors; do
-            echo -e "\t\t\e[0;35m${contributors}\e[m"
+        echo -e "\t\t\e[0;35m${contributors}\e[m"
     done
 
     echo -e ""
@@ -319,8 +318,8 @@ show_about() {
     read -rsn1 option
 
     case "$option" in
-        *)
-            ;;
+    *) ;;
+
     esac
 }
 
@@ -438,7 +437,7 @@ configure_modprobe() {
     fi
 
     # Create new configuration file
-    if echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$NVIDIA_CONF" > /dev/null; then
+    if echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$NVIDIA_CONF" >/dev/null; then
         echo -e "${SUCCSESS} NVIDIA configuration file created."
     else
         echo -e "${ERROR} Failed to create NVIDIA configuration file."
@@ -489,24 +488,27 @@ confirm_reboot() {
     # properly, if no is selected the script
     # will return to show_menu
     echo -e "${GREEN}Action complete.${ENDCOLOR}"
+    if [[ "$DEBUG_MODE" = true ]]; then
+        echo -e "${INFO} Log saved at $LOG_FILE${ENDCOLOR}"
+    fi
     read -rp "Would you like to reboot now? (y/N): " reboot_now
     case "$reboot_now" in
-        [yY][eE][sS]|[yY])
-            sudo reboot now
-            ;;
-        *)
-            echo -e "${INFO} Please reboot your system later to apply changes."
-            echo -e ""
-            echo -e "\t${GREEN}Press any button to return${ENDCOLOR}"
+    [yY][eE][sS] | [yY])
+        sudo reboot now
+        ;;
+    *)
+        echo -e "${INFO} Please reboot your system later to apply changes."
+        echo -e ""
+        echo -e "\t${GREEN}Press any button to return${ENDCOLOR}"
 
-            # Use -n1 to read a single character without the need to press enter
-            read -rsn1 option
+        # Use -n1 to read a single character without the need to press enter
+        read -rsn1 option
 
-            case "$option" in
-                *)
-                    ;;
-            esac
-            ;;
+        case "$option" in
+        *) ;;
+
+        esac
+        ;;
     esac
 }
 
@@ -609,7 +611,7 @@ remove_grub_default() {
 #
 
 # Step 1: Set up trap for SIGINT (CTRL+C)
-trap "echo -e '${RED}Exited${ENDCOLOR}' ;exit 0" SIGINT
+trap 'echo -e "${RED}Exited${ENDCOLOR}"; exit 0' SIGINT
 
 # Step 2: Check launch arguments for extra functionality
 check_args "$@"
