@@ -52,7 +52,7 @@ The Ultimite Nvidia Toolbox in one bash script
 
 ## Usage
 
-```shell
+```plaintext
     Usage: nvidiainstall.sh [option] [option]
 
     Options:
