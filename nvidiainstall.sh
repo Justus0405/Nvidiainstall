@@ -378,7 +378,7 @@ configure_mkinitcpio() {
     echo -e "${SECTION} Configuring mkinitcpio..."
     MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 
-    if [[ -f $MKINITCPIO_CONF ]]; then
+    if [[ -f "$MKINITCPIO_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_CONF.bak"
         echo -e "${SUCCSESS} Backup of $MKINITCPIO_CONF created."
@@ -431,7 +431,7 @@ configure_modprobe() {
     NVIDIA_CONF="/etc/modprobe.d/nvidia.conf"
 
     # Backup existing configuration file if it exists
-    if [[ -f $NVIDIA_CONF ]]; then
+    if [[ -f "$NVIDIA_CONF" ]]; then
         sudo cp "$NVIDIA_CONF" "${NVIDIA_CONF}.bak"
         echo -e "${SUCCSESS} Backup of $NVIDIA_CONF created."
     fi
@@ -454,7 +454,7 @@ configure_grub_default() {
     echo -e "${SECTION} Configuring GRUB default..."
     GRUB_CONF="/etc/default/grub"
 
-    if [[ -f $GRUB_CONF ]]; then
+    if [[ -f "$GRUB_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$GRUB_CONF" "$GRUB_CONF.bak"
         echo -e "${SUCCSESS} Backup of $GRUB_CONF created."
@@ -479,8 +479,9 @@ update_grub_config() {
     # Updates the grub config at /boot/grub/grub.cfg
     # After /etc/default/grub was changed
     #
+    BOOT_CONF="/boot/grub/grub.cfg"
     echo -e "${SECTION} Updating GRUB config..."
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    sudo grub-mkconfig -o "$BOOT_CONF"
 }
 
 confirm_reboot() {
@@ -531,7 +532,7 @@ remove_mkinitcpio() {
     echo -e "${SECTION} Removing mkinitcpio modules..."
     MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 
-    if [[ -f $MKINITCPIO_CONF ]]; then
+    if [[ -f "$MKINITCPIO_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_CONF.bak-uninstall"
         echo -e "${SUCCSESS} Backup of $MKINITCPIO_CONF created."
@@ -572,7 +573,7 @@ remove_modprobe() {
     NVIDIA_CONF="/etc/modprobe.d/nvidia.conf"
 
     # Backup existing configuration file if it exists
-    if [[ -f $NVIDIA_CONF ]]; then
+    if [[ -f "$NVIDIA_CONF" ]]; then
         sudo cp "$NVIDIA_CONF" "${NVIDIA_CONF}.bak-uninstall"
         echo -e "${SUCCSESS} Backup of $NVIDIA_CONF created."
     fi
@@ -593,7 +594,7 @@ remove_grub_default() {
     echo -e "${SECTION} Configuring GRUB default..."
     GRUB_CONF="/etc/default/grub"
 
-    if [[ -f $GRUB_CONF ]]; then
+    if [[ -f "$GRUB_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$GRUB_CONF" "$GRUB_CONF.bak-uninstall"
         echo -e "${SUCCSESS} Backup of $GRUB_CONF created."
