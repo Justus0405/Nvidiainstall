@@ -6,6 +6,7 @@
 # License: MIT
 # //////////////////////////////////////////////////////////////////////////////////////////
 
+# Version
 export VERSION="1.1"
 
 # Color variables
@@ -17,15 +18,15 @@ export GRAY="\e[1;90m"
 export ENDCOLOR="\e[0m"
 
 # Info variables
-export SUCCSESS="${GRAY}[${GREEN}✓${GRAY}]${ENDCOLOR}"
-export ERROR="${RED}Error:${ENDCOLOR}"
-export WARNING="${GRAY}[${RED}!${GRAY}]${ENDCOLOR}"
 export SECTION="${GRAY}[${YELLOW}!${GRAY}]${ENDCOLOR}"
 export INFO="${GRAY}[${CYAN}i${GRAY}]${ENDCOLOR}"
+export SUCCSESS="${GRAY}[${GREEN}✓${GRAY}]${ENDCOLOR}"
+export WARNING="${GRAY}[${RED}!${GRAY}]${ENDCOLOR}"
+export ERROR="${RED}Error:${ENDCOLOR}"
 
-#
-# CHECKS
-#
+#########################
+# CHECKS                #
+#########################
 
 check_args() {
     # This Function reads the launch arguments
@@ -96,9 +97,9 @@ check_nvidia() {
     fi
 }
 
-#
-# TERMINAL INTERFACE
-#
+#########################
+# TERMINAL INTERFACE    #
+#########################
 
 show_menu() {
     # This is the main function with renders the selection menu
@@ -162,7 +163,7 @@ conrfirm_installation() {
     # any capitalization
     clear
     echo -e "${INFO} This script will install NVIDIA drivers and modify system configurations."
-    echo -e "${INFO} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
+    echo -e "${WARNING} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
     [yY][eE][sS] | [yY])
@@ -221,8 +222,8 @@ confirm_uninstallation() {
     # possible to answer either with y or yes in
     # any capitalization
     clear
-    echo -e "${INFO} This will completely uninstall all NVIDIA drivers and modify system configurations."
-    echo -e "${INFO} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
+    echo -e "${WARNING} This will completely uninstall all NVIDIA drivers and modify system configurations."
+    echo -e "${WARNING} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
     [yY][eE][sS] | [yY])
@@ -323,36 +324,54 @@ show_about() {
     esac
 }
 
-#
-# INSTALLATION STEPS
-#
+#########################
+# INSTALLATION STEPS    #
+#########################
 
 update_system() {
     #
     # Stay up to date folks
     #
     echo -e "${SECTION} Updating system..."
-    sudo pacman -Syyu
+    sudo pacman -Syyu || {
+        echo -e "${ERROR} Could not update system."
+        exit 1
+    }
+    echo -e "${SUCCSESS} System updated."
 }
 
 check_kernel_headers() {
     # Check the installed kernel and installs
     # the associated headers, this is needed
     # for the kernel to load the nvidia modules
+    echo -e "${SECTION} Installing kernel modules..."
     kernel_version=$(uname -r)
     if [[ "$kernel_version" == *"zen"* ]]; then
         echo -e "${INFO} Detected kernel: zen"
-        sudo pacman -S --needed --noconfirm linux-zen-headers
+        sudo pacman -S --needed --noconfirm linux-zen-headers || {
+            echo -e "${ERROR} Could not install kernel modules."
+            exit 1
+        }
     elif [[ "$kernel_version" == *"lts"* ]]; then
         echo -e "${INFO} Detected kernel: lts"
-        sudo pacman -S --needed --noconfirm linux-lts-headers
+        sudo pacman -S --needed --noconfirm linux-lts-headers || {
+            echo -e "${ERROR} Could not install kernel modules."
+            exit 1
+        }
     elif [[ "$kernel_version" == *"hardened"* ]]; then
         echo -e "${INFO} Detected kernel: hardened"
-        sudo pacman -S --needed --noconfirm linux-hardened-headers
+        sudo pacman -S --needed --noconfirm linux-hardened-headers || {
+            echo -e "${ERROR} Could not install kernel modules."
+            exit 1
+        }
     else
         echo -e "${INFO} Detected kernel: regular"
-        sudo pacman -S --needed --noconfirm linux-headers
+        sudo pacman -S --needed --noconfirm linux-headers || {
+            echo -e "${ERROR} Could not install kernel modules."
+            exit 1
+        }
     fi
+    echo -e "${SUCCSESS} Kernel modules installed."
 }
 
 install_nvidia_packages() {
@@ -360,7 +379,11 @@ install_nvidia_packages() {
     # Install the nvidia drivers and needed dependencies if not present
     #
     echo -e "${SECTION} Installing NVIDIA packages..."
-    sudo pacman -S --needed --noconfirm nvidia-dkms libglvnd nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia egl-wayland
+    sudo pacman -S --needed --noconfirm nvidia-dkms libglvnd nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || {
+        echo -e "${ERROR} Could not install Nvidia packages."
+        exit 1
+    }
+    echo -e "${SUCCSESS} Nvidia packages installed."
 }
 
 configure_mkinitcpio() {
@@ -381,15 +404,15 @@ configure_mkinitcpio() {
     if [[ -f "$MKINITCPIO_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_CONF.bak"
-        echo -e "${SUCCSESS} Backup of $MKINITCPIO_CONF created."
+        echo -e "${INFO} Backup of $MKINITCPIO_CONF created."
 
         # Remove any lines that are commented out and contain nothing
-        echo -e "${INFO} Cleaning up $MKINITCPIO_CONF."
+        echo -e "${INFO} Cleaning up $MKINITCPIO_CONF structure..."
         sudo sed -i '/^#/d;/^$/d' "$MKINITCPIO_CONF"
 
         if grep -q 'MODULES=.*nvidia' "$MKINITCPIO_CONF"; then
-            echo -e "${INFO} Cleaning up existing NVIDIA modules."
             # Remove any occurrences of nvidia-related modules
+            echo -e "${INFO} Cleaning up existing NVIDIA modules..."
             sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$MKINITCPIO_CONF"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
@@ -398,7 +421,7 @@ configure_mkinitcpio() {
 
         # Now, append the NVIDIA modules in the correct order if they are not already there
         if ! grep -q 'MODULES=.*nvidia nvidia_modeset nvidia_uvm nvidia_drm' "$MKINITCPIO_CONF"; then
-            echo -e "${INFO} Adding NVIDIA modules in the correct order."
+            echo -e "${INFO} Adding NVIDIA modules..."
             sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "$MKINITCPIO_CONF"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
@@ -409,13 +432,13 @@ configure_mkinitcpio() {
 
         # Removing kms hook if it exists
         if grep -q '\bkms\b' "$MKINITCPIO_CONF"; then
-            echo -e "${INFO} Removing kms hook"
+            echo -e "${INFO} Removing kms hook..."
             sudo sed -i 's/\bkms \b//g' "$MKINITCPIO_CONF"
         else
             echo -e "${INFO} kms hook is not present."
         fi
 
-        echo -e "${SUCCSESS} mkinitcpio.conf updated."
+        echo -e "${SUCCSESS} $MKINITCPIO_CONF updated."
     else
         echo -e "${ERROR} $MKINITCPIO_CONF not found."
         exit 1
@@ -427,22 +450,23 @@ configure_modprobe() {
     # If it exists, backs it up and creates a new one with the content
     # "options nvidia_drm modeset=1 fbdev=1" straight from Hyprland Wiki
     # This isnt needed but still good for compatibility
-    echo -e "${SECTION} Creating NVIDIA configuration file..."
+    echo -e "${SECTION} Creating Nvidia modprobe file..."
     NVIDIA_CONF="/etc/modprobe.d/nvidia.conf"
 
     # Backup existing configuration file if it exists
     if [[ -f "$NVIDIA_CONF" ]]; then
         sudo cp "$NVIDIA_CONF" "${NVIDIA_CONF}.bak"
-        echo -e "${SUCCSESS} Backup of $NVIDIA_CONF created."
+        echo -e "${INFO} Backup of $NVIDIA_CONF created."
     fi
 
     # Create new configuration file
-    if echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$NVIDIA_CONF" >/dev/null; then
-        echo -e "${SUCCSESS} NVIDIA configuration file created."
-    else
-        echo -e "${ERROR} Failed to create NVIDIA configuration file."
+    echo -e "${INFO} Creating $NVIDIA_CONF..."
+    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$NVIDIA_CONF" >/dev/null || {
+        echo -e "${ERROR} Failed to create NVIDIA modprobe file."
         exit 1
-    fi
+    }
+    echo -e "${SUCCSESS} NVIDIA modprobe file created."
+
 }
 
 configure_grub_default() {
@@ -457,10 +481,12 @@ configure_grub_default() {
     if [[ -f "$GRUB_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$GRUB_CONF" "$GRUB_CONF.bak"
-        echo -e "${SUCCSESS} Backup of $GRUB_CONF created."
+        echo -e "${INFO} Backup of $GRUB_CONF created."
 
         # Update the GRUB configuration
+        echo -e "${INFO} Adding nvidia modeset to $GRUB_CONF..."
         sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/!b;/nvidia_drm.modeset=1/!s/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)/\1 nvidia_drm.modeset=1/' "$GRUB_CONF"
+        echo -e "${SUCCSESS} $GRUB_CONF updated."
     else
         echo -e "${ERROR} $GRUB_CONF not found."
         exit 1
@@ -472,7 +498,11 @@ regenerate_initramfs() {
     # to load the nvidia modules
     # Prepare for high CPU usage
     echo -e "${SECTION} Regenerating initramfs..."
-    sudo mkinitcpio -P
+    sudo mkinitcpio -P || {
+        echo -e "${ERROR} Failed to regenerate the initramfs."
+        exit 1
+    }
+    echo -e "${SUCCSESS} initramfs regenerated."
 }
 
 update_grub_config() {
@@ -481,13 +511,18 @@ update_grub_config() {
     #
     BOOT_CONF="/boot/grub/grub.cfg"
     echo -e "${SECTION} Updating GRUB config..."
-    sudo grub-mkconfig -o "$BOOT_CONF"
+    sudo grub-mkconfig -o "$BOOT_CONF" || {
+        echo -e "${ERROR} Failed to update $BOOT_CONF."
+        exit 1
+    }
+    echo -e "${SUCCSESS} $BOOT_CONF updated."
 }
 
 confirm_reboot() {
     # Asks the user to reboot to apply changes
     # properly, if no is selected the script
     # will return to show_menu
+    echo -e ""
     echo -e "${GREEN}Action complete.${ENDCOLOR}"
     if [[ "$DEBUG_MODE" = true ]]; then
         echo -e "${INFO} Log saved at $LOG_FILE${ENDCOLOR}"
@@ -513,16 +548,20 @@ confirm_reboot() {
     esac
 }
 
-#
-# UNINSTALLATION STEPS
-#
+#########################
+# UNINSTALLATION STEPS  #
+#########################
 
 remove_nvidia_packages() {
     #
     # Uninstall the nvidia drivers, configs and unused dependencies
     #
-    echo -e "${SECTION} Uninstalling NVIDIA packages..."
-    sudo pacman -Rn nvidia-dkms nvidia-settings
+    echo -e "${SECTION} Uninstalling Nvidia packages..."
+    sudo pacman -Rn nvidia-dkms nvidia-settings || {
+        echo -e "${ERROR} Could not uninstall Nvidia packages."
+        exit 1
+    }
+    echo -e "${SUCCSESS} Nvidia packages uninstalled."
 }
 
 remove_mkinitcpio() {
@@ -535,15 +574,15 @@ remove_mkinitcpio() {
     if [[ -f "$MKINITCPIO_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_CONF.bak-uninstall"
-        echo -e "${SUCCSESS} Backup of $MKINITCPIO_CONF created."
+        echo -e "${INFO} Backup of $MKINITCPIO_CONF created."
 
         # Remove any lines that are commented out and contain nothing
-        echo -e "${INFO} Cleaning up $MKINITCPIO_CONF."
+        echo -e "${INFO} Cleaning up $MKINITCPIO_CONF structure..."
         sudo sed -i '/^#/d;/^$/d' "$MKINITCPIO_CONF"
 
         if grep -q 'MODULES=.*nvidia' "$MKINITCPIO_CONF"; then
-            echo -e "${INFO} Cleaning up existing NVIDIA modules."
             # Remove any occurrences of nvidia-related modules
+            echo -e "${INFO} Removing NVIDIA modules..."
             sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$MKINITCPIO_CONF"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
@@ -554,11 +593,11 @@ remove_mkinitcpio() {
         if grep -q '\bkms\b' "$MKINITCPIO_CONF"; then
             echo -e "${INFO} kms hook is already present."
         else
-            echo -e "${INFO} Adding kms hook"
+            echo -e "${INFO} Adding kms hook..."
             sudo sed -i 's/modconf/& kms/' "$MKINITCPIO_CONF"
         fi
 
-        echo -e "${SUCCSESS} mkinitcpio.conf updated."
+        echo -e "${SUCCSESS} $MKINITCPIO_CONF updated."
     else
         echo -e "${ERROR} $MKINITCPIO_CONF not found."
         exit 1
@@ -569,22 +608,21 @@ remove_modprobe() {
     # Creates a backup of the /etc/modprobe.d/nvidia.conf file
     # and deletes the original one
     #
-    echo -e "${SECTION} Deleting NVIDIA configuration file..."
+    echo -e "${SECTION} Deleting Nvidia modprobe file..."
     NVIDIA_CONF="/etc/modprobe.d/nvidia.conf"
 
     # Backup existing configuration file if it exists
     if [[ -f "$NVIDIA_CONF" ]]; then
         sudo cp "$NVIDIA_CONF" "${NVIDIA_CONF}.bak-uninstall"
-        echo -e "${SUCCSESS} Backup of $NVIDIA_CONF created."
+        echo -e "${INFO} Backup of $NVIDIA_CONF created."
     fi
 
     # Delete configuration file
-    if sudo rm -f "$NVIDIA_CONF"; then
-        echo -e "${SUCCSESS} NVIDIA configuration file deleted."
-    else
-        echo -e "${ERROR} Failed to delete NVIDIA configuration file."
-        exit 1
-    fi
+    sudo rm -f "$NVIDIA_CONF" || {
+        echo -e "${WARNING} Failed to delete Nvidia modprobe file."
+    }
+    echo -e "${SUCCSESS} NVIDIA modprobe file deleted."
+
 }
 
 remove_grub_default() {
@@ -597,19 +635,21 @@ remove_grub_default() {
     if [[ -f "$GRUB_CONF" ]]; then
         # Backup existing configuration file if it exists
         sudo cp "$GRUB_CONF" "$GRUB_CONF.bak-uninstall"
-        echo -e "${SUCCSESS} Backup of $GRUB_CONF created."
+        echo -e "${INFO} Backup of $GRUB_CONF created."
 
         # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
+        echo -e "${INFO} Removing nvidia modeset from $GRUB_CONF..."
         sudo sed -i 's/nvidia_drm\.modeset=1//g' "$GRUB_CONF"
+        echo -e "${SUCCSESS} $GRUB_CONF updated."
     else
         echo -e "${ERROR} $GRUB_CONF not found."
         exit 1
     fi
 }
 
-#
-# INITIATE START
-#
+#########################
+# PROGRAMM START        #
+#########################
 
 # Step 1: Set up trap for SIGINT (CTRL+C)
 trap 'echo -e "${RED}Exited${ENDCOLOR}"; exit 0' SIGINT
