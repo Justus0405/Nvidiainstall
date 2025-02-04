@@ -20,7 +20,7 @@ export ENDCOLOR="\e[0m"
 # Info variables
 export SECTION="${GRAY}[${YELLOW}!${GRAY}]${ENDCOLOR}"
 export INFO="${GRAY}[${CYAN}i${GRAY}]${ENDCOLOR}"
-export SUCCSESS="${GRAY}[${GREEN}✓${GRAY}]${ENDCOLOR}"
+export SUCCESS="${GRAY}[${GREEN}✓${GRAY}]${ENDCOLOR}"
 export WARNING="${GRAY}[${RED}!${GRAY}]${ENDCOLOR}"
 export ERROR="${RED}Error:${ENDCOLOR}"
 
@@ -337,7 +337,7 @@ update_system() {
         echo -e "${ERROR} Could not update system."
         exit 1
     }
-    echo -e "${SUCCSESS} System updated."
+    echo -e "${SUCCESS} System updated."
 }
 
 check_kernel_headers() {
@@ -371,7 +371,7 @@ check_kernel_headers() {
             exit 1
         }
     fi
-    echo -e "${SUCCSESS} Kernel modules installed."
+    echo -e "${SUCCESS} Kernel modules installed."
 }
 
 install_nvidia_packages() {
@@ -383,7 +383,7 @@ install_nvidia_packages() {
         echo -e "${ERROR} Could not install Nvidia packages."
         exit 1
     }
-    echo -e "${SUCCSESS} Nvidia packages installed."
+    echo -e "${SUCCESS} Nvidia packages installed."
 }
 
 configure_mkinitcpio() {
@@ -438,13 +438,14 @@ configure_mkinitcpio() {
             echo -e "${INFO} kms hook is not present."
         fi
 
-        echo -e "${SUCCSESS} $MKINITCPIO_CONF updated."
+        echo -e "${SUCCESS} $MKINITCPIO_CONF updated."
     else
         echo -e "${ERROR} $MKINITCPIO_CONF not found."
         exit 1
     fi
 }
 
+# WILL BE DEPRICATED WITH LATEST MAJOR RELEASE
 configure_modprobe() {
     # This function looks for an nvidia.conf file at /etc/modprobe.d/
     # If it exists, backs it up and creates a new one with the content
@@ -465,7 +466,7 @@ configure_modprobe() {
         echo -e "${ERROR} Failed to create NVIDIA modprobe file."
         exit 1
     }
-    echo -e "${SUCCSESS} NVIDIA modprobe file created."
+    echo -e "${SUCCESS} NVIDIA modprobe file created."
 
 }
 
@@ -486,7 +487,7 @@ configure_grub_default() {
         # Update the GRUB configuration
         echo -e "${INFO} Adding nvidia modeset to $GRUB_CONF..."
         sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/!b;/nvidia_drm.modeset=1/!s/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)/\1 nvidia_drm.modeset=1/' "$GRUB_CONF"
-        echo -e "${SUCCSESS} $GRUB_CONF updated."
+        echo -e "${SUCCESS} $GRUB_CONF updated."
     else
         echo -e "${ERROR} $GRUB_CONF not found."
         exit 1
@@ -502,7 +503,7 @@ regenerate_initramfs() {
         echo -e "${ERROR} Failed to regenerate the initramfs."
         exit 1
     }
-    echo -e "${SUCCSESS} initramfs regenerated."
+    echo -e "${SUCCESS} initramfs regenerated."
 }
 
 update_grub_config() {
@@ -515,7 +516,7 @@ update_grub_config() {
         echo -e "${ERROR} Failed to update $BOOT_CONF."
         exit 1
     }
-    echo -e "${SUCCSESS} $BOOT_CONF updated."
+    echo -e "${SUCCESS} $BOOT_CONF updated."
 }
 
 confirm_reboot() {
@@ -561,7 +562,7 @@ remove_nvidia_packages() {
         echo -e "${ERROR} Could not uninstall Nvidia packages."
         exit 1
     }
-    echo -e "${SUCCSESS} Nvidia packages uninstalled."
+    echo -e "${SUCCESS} Nvidia packages uninstalled."
 }
 
 remove_mkinitcpio() {
@@ -597,13 +598,14 @@ remove_mkinitcpio() {
             sudo sed -i 's/modconf/& kms/' "$MKINITCPIO_CONF"
         fi
 
-        echo -e "${SUCCSESS} $MKINITCPIO_CONF updated."
+        echo -e "${SUCCESS} $MKINITCPIO_CONF updated."
     else
         echo -e "${ERROR} $MKINITCPIO_CONF not found."
         exit 1
     fi
 }
 
+# WILL BE DEPRICATED WITH LATEST MAJOR RELEASE
 remove_modprobe() {
     # Creates a backup of the /etc/modprobe.d/nvidia.conf file
     # and deletes the original one
@@ -621,7 +623,7 @@ remove_modprobe() {
     sudo rm -f "$NVIDIA_CONF" || {
         echo -e "${WARNING} Failed to delete Nvidia modprobe file."
     }
-    echo -e "${SUCCSESS} NVIDIA modprobe file deleted."
+    echo -e "${SUCCESS} NVIDIA modprobe file deleted."
 
 }
 
@@ -640,7 +642,7 @@ remove_grub_default() {
         # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
         echo -e "${INFO} Removing nvidia modeset from $GRUB_CONF..."
         sudo sed -i 's/nvidia_drm\.modeset=1//g' "$GRUB_CONF"
-        echo -e "${SUCCSESS} $GRUB_CONF updated."
+        echo -e "${SUCCESS} $GRUB_CONF updated."
     else
         echo -e "${ERROR} $GRUB_CONF not found."
         exit 1
