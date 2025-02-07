@@ -27,7 +27,7 @@
 # Nvidia Driver Installer
 
 A fully automated tool for installing Nvidia drivers on Arch Linux.
-The Ultimite Nvidia Toolbox in one bash script
+The Ultimate Nvidia Toolbox in one bash script.
 
 > [!NOTE]
 > Currently only supports generation **Maxwell** or newer,
