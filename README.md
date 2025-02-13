@@ -48,7 +48,7 @@ The Ultimate Nvidia Toolbox in one bash script.
    cd Nvidiainstall
    ```
 
-3. Run the installer as sudo:
+3. Run the script as sudo:
    ```shell
    sudo ./nvidiainstall
    ```
