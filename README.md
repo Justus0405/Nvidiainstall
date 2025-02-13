@@ -8,6 +8,7 @@
 ╚═╝  ╚═══╝  ╚═══╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝
 
 ```
+
 <p align="left">
     <!-- Discord Badge -->
     <a href="https://discord.gg/https://discord.com/invite/E2Bp7GtcaA"><img src="https://img.shields.io/discord/1060607505186684978?logo=Discord&colorA=1e1e2e&colorB=a6e3a1&style=for-the-badge"></a>
@@ -36,19 +37,21 @@ The Ultimate Nvidia Toolbox in one bash script.
 ## Installation
 
 1. Clone the repository:
-    ```shell
-    git clone https://github.com/Justus0405/Nvidiainstall.git
-    ```
+
+   ```shell
+   git clone https://github.com/Justus0405/Nvidiainstall.git
+   ```
 
 2. Navigate to the directory:
-    ```shell
-    cd Nvidiainstall
-    ```
+
+   ```shell
+   cd Nvidiainstall
+   ```
 
 3. Run the installer as sudo:
-    ```shell
-    sudo ./nvidiainstall
-    ```
+   ```shell
+   sudo ./nvidiainstall
+   ```
 
 ## Usage
 
