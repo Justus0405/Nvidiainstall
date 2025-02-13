@@ -40,7 +40,7 @@ checkArgs() {
             echo -e "Options:"
             echo -e "  -h, --help      Show this help message"
             echo -e "  -d, --debug     Run the script with logging"
-            echo -e "  -f, --force     Disable nvidia check and force install"
+            echo -e "  -f, --force     Disable Nvidia check and force install"
             exit 0
             ;;
         -d | --debug)
@@ -86,13 +86,13 @@ checkSudo() {
 }
 
 checkNvidia() {
-    # Looks for any PCI device with the name "Nvidia" in it
+    # Looks for any PCI device with the name "nvidia" in it
     # This is to prevent something idk, saftey and such
     # stuff
     if lspci | grep -i nvidia &>/dev/null; then
-        echo -e "${green}NVIDIA card detected.${endColor}"
+        echo -e "${green}Nvidia card detected.${endColor}"
     else
-        echo -e "${error} No NVIDIA card detected."
+        echo -e "${error} No Nvidia card detected."
         exit 1
     fi
 }
@@ -162,7 +162,7 @@ confirmInstallation() {
     # possible to answer either with y or yes in
     # any capitalization
     clear
-    echo -e "${info} This script will install NVIDIA drivers and modify system configurations."
+    echo -e "${info} This script will install Nvidia drivers and modify system configurations."
     echo -e "${warning} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
@@ -222,7 +222,7 @@ confirmUninstallation() {
     # possible to answer either with y or yes in
     # any capitalization
     clear
-    echo -e "${warning} This will completely uninstall all NVIDIA drivers and modify system configurations."
+    echo -e "${warning} This will completely uninstall all Nvidia drivers and modify system configurations."
     echo -e "${warning} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
     read -rp "Do you want to proceed? (y/N): " confirm
     case "$confirm" in
@@ -269,7 +269,7 @@ uninstallationSteps() {
 }
 
 showDeviceInformation() {
-    # Looks for any PCI device with the name "Nvidia" in it
+    # Looks for any PCI device with the name "nvidia" in it
     # and lists them here
     #
     clear
@@ -278,7 +278,7 @@ showDeviceInformation() {
     echo -e ""
     gpu=$(lspci | grep -i 'nvidia' || true)
     if [[ -z "$gpu" ]]; then
-        gpu="No NVIDIA card detected"
+        gpu="No Nvidia card detected"
     fi
     echo -e "$gpu"
     echo -e ""
@@ -378,7 +378,7 @@ installNvidiaPackages() {
     #
     # Install the nvidia drivers and needed dependencies if not present
     #
-    echo -e "${section} Installing NVIDIA packages..."
+    echo -e "${section} Installing Nvidia packages..."
     sudo pacman -S --needed --noconfirm nvidia-dkms libglvnd nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || {
         echo -e "${error} Could not install Nvidia packages."
         exit 1
@@ -412,22 +412,22 @@ configureMkinitcpio() {
 
         if grep -q 'MODULES=.*nvidia' "$mkinitcpioConf"; then
             # Remove any occurrences of nvidia-related modules
-            echo -e "${info} Cleaning up existing NVIDIA modules..."
+            echo -e "${info} Cleaning up existing Nvidia modules..."
             sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$mkinitcpioConf"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
             sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "$mkinitcpioConf"
         fi
 
-        # Now, append the NVIDIA modules in the correct order if they are not already there
+        # Now, append the nvidia modules in the correct order if they are not already there
         if ! grep -q 'MODULES=.*nvidia nvidia_modeset nvidia_uvm nvidia_drm' "$mkinitcpioConf"; then
-            echo -e "${info} Adding NVIDIA modules..."
+            echo -e "${info} Adding Nvidia modules..."
             sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "$mkinitcpioConf"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
             sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "$mkinitcpioConf"
         else
-            echo -e "${info} NVIDIA modules are already present in the correct order."
+            echo -e "${info} Nvidia modules are already present in the correct order."
         fi
 
         # Removing kms hook if it exists
@@ -463,10 +463,10 @@ configureModprobe() {
     # Create new configuration file
     echo -e "${info} Creating $nvidiaConf..."
     echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$nvidiaConf" >/dev/null || {
-        echo -e "${error} Failed to create NVIDIA modprobe file."
+        echo -e "${error} Failed to create Nvidia modprobe file."
         exit 1
     }
-    echo -e "${success} NVIDIA modprobe file created."
+    echo -e "${success} Nvidia modprobe file created."
 
 }
 
@@ -485,7 +485,7 @@ configureGrubDefault() {
         echo -e "${info} Backup of $grubConf created."
 
         # Update the GRUB configuration
-        echo -e "${info} Adding nvidia modeset to $grubConf..."
+        echo -e "${info} Adding Nvidia modeset to $grubConf..."
         sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/!b;/nvidia_drm.modeset=1/!s/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)/\1 nvidia_drm.modeset=1/' "$grubConf"
         echo -e "${success} $grubConf updated."
     else
@@ -583,7 +583,7 @@ removeMkinitcpio() {
 
         if grep -q 'MODULES=.*nvidia' "$mkinitcpioConf"; then
             # Remove any occurrences of nvidia-related modules
-            echo -e "${info} Removing NVIDIA modules..."
+            echo -e "${info} Removing Nvidia modules..."
             sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$mkinitcpioConf"
 
             # Ensure exactly one space between words and no space after '(' or before ')'
@@ -623,7 +623,7 @@ removeModprobe() {
     sudo rm -f "$nvidiaConf" || {
         echo -e "${warning} Failed to delete Nvidia modprobe file."
     }
-    echo -e "${success} NVIDIA modprobe file deleted."
+    echo -e "${success} Nvidia modprobe file deleted."
 
 }
 
@@ -662,7 +662,7 @@ checkArgs "$@"
 # Step 3: Check if running as sudo
 checkSudo
 
-# Step 4: Check if NVIDIA card is present
+# Step 4: Check if nvidia card is present
 if [[ "$forcedMode" != true ]]; then
     checkNvidia
 fi
