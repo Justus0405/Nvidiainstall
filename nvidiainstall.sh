@@ -1,10 +1,10 @@
-#!/bin/bash
-
-# //////////////////////////////////////////////////////////////////////////////////////////
-# Nvidiainstall by Justus0405
-# Source : https://github.com/Justus0405/Nvidiainstall
+#!/usr/bin/env bash
+#
+# Automated nvidia driver installer
+#
+# Author: Justus0405
+# Date: 12.10.2024
 # License: MIT
-# //////////////////////////////////////////////////////////////////////////////////////////
 
 # Version
 export version="1.1"
