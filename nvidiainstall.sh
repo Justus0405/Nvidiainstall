@@ -6,7 +6,7 @@
 # Date: 12.10.2024
 # License: MIT
 
-export scriptVersion="2.0"
+export scriptVersion="2.1"
 
 ### COLOR CODES ###
 export black="\e[1;30m"
@@ -104,6 +104,13 @@ aurHelperInstall() {
     local targetUser="${SUDO_USER:-$(whoami)}"
 
     sudo -u "${targetUser}" yay -S --needed --noconfirm ${packages}
+}
+
+aurHelperUninstall() {
+    local packages="$1"
+    local targetUser="${SUDO_USER:-$(whoami)}"
+
+    sudo -u "${targetUser}" yay -R --noconfirm ${packages}
 }
 
 checkNvidia() {
@@ -627,19 +634,19 @@ removeNvidiaPackages() {
 
     case "${gpuDriver}" in
     "nvidia-dkms")
-        sudo pacman -Rns --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        sudo pacman -R --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
     "nvidia-470xx-dkms")
         checkAurHelper
-        yay -Rns --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
     "nvidia-390xx-dkms")
         checkAurHelper
-        yay -Rns --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
-        yay -Rns --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
     esac
 
