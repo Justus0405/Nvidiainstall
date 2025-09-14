@@ -84,12 +84,18 @@ checkAurHelper() {
 }
 
 installAurHelper() {
-    # Installing yay as aur helper.
+    # Installing yay as aur helper for the executing user.
+    # Makepkg crashes if its not running as a non-root user
+
+    targetUser="${SUDO_USER:-$(whoami)}"
 
     logMessage "info" "Installing yay..."
-    git clone https://aur.archlinux.org/yay.git || logMessage "error" "Failed to download yay, are you connected to the internet?"
-    cd yay || logMessage "error" "Failed to enter the yay path"
-    makepkg -si --noconfirm || logMessage "error" "Failed to install yay"
+    sudo -u "${targetUser}" bash <<'EOF'
+    cd /tmp
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si --noconfirm
+EOF
     logMessage "info" "Sucessfully installed yay."
 }
 
