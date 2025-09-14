@@ -99,6 +99,13 @@ EOF
     logMessage "info" "Sucessfully installed yay."
 }
 
+aurHelperInstall() {
+    local packages="$1"
+    local targetUser="${SUDO_USER:-$(whoami)}"
+
+    sudo -u "${targetUser}" yay -S --needed --noconfirm "${packages}"
+}
+
 checkNvidia() {
     # Detect NVIDIA GPU and decide driver package.
 
@@ -426,15 +433,15 @@ installNvidiaPackages() {
         ;;
     "nvidia-470xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        aurHelperInstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-390xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        aurHelperInstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     esac
 
