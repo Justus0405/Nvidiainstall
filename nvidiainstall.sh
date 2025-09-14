@@ -103,7 +103,7 @@ aurHelperInstall() {
     local packages="$1"
     local targetUser="${SUDO_USER:-$(whoami)}"
 
-    sudo -u "${targetUser}" yay -S --needed --noconfirm "${packages}"
+    sudo -u "${targetUser}" yay -S --needed --noconfirm ${packages}
 }
 
 checkNvidia() {
