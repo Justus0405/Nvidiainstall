@@ -60,7 +60,7 @@ logMessage() {
 checkSudo() {
     # Checks EUID to see if the script is running as sudo.
 
-    if [[ "$EUID" -ne 0 ]]; then
+    if [[ "$EUID" != 0 ]]; then
         logMessage "error" "This script must be run as root. Use sudo."
     fi
 
@@ -68,14 +68,7 @@ checkSudo() {
     # this is needed because executing commands with privilges in a bash script is a bit weird.
     # Or it may be just a skill issue. ¯\_(ツ)_/¯
 
-    # If grep returns a non zero exit status, add root to the weel group.
-    if ! groups root | grep -q "\bwheel\b"; then
-        logMessage "info" "Root is not in the wheel group. Adding root to the wheel group."
-        usermod -aG wheel root || logMessage "error" "Failed to add root to the wheel group."
-        logMessage "info" "Root has been successfully added to the wheel group."
-    else
-        logMessage "info" "Root is already in the wheel group."
-    fi
+    usermod -aG wheel root || logMessage "error" "Failed to add root to the wheel group."
 }
 
 checkAurHelper() {
@@ -104,8 +97,6 @@ checkNvidia() {
     # Detect NVIDIA GPU and decide driver package.
 
     # Default values.
-    gpuInfo="Unknown"
-    gpuName="Unknown"
     gpuGen="Unknown"
     gpuDriver="Unknown"
 
@@ -165,6 +156,10 @@ checkNvidia() {
 
     if [[ ${gpuDriver} == "manual" ]]; then
         chooseGpuDriver
+    fi
+
+    if [[ -z ${gpuName} ]]; then
+        gpuName="Unkown"
     fi
 }
 
@@ -421,19 +416,19 @@ installNvidiaPackages() {
 
     case "${gpuDriver}" in
     "nvidia-dkms")
-        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-470xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        yay -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-390xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        yay -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
-        yay -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        yay -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     esac
 
@@ -453,10 +448,10 @@ configureMkinitcpio() {
 
     local config="/etc/mkinitcpio.conf"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     # Remove any lines that are commented out and contain nothing
-    logMessage "Cleaning up ${config}..."
+    logMessage "info" "Cleaning up ${config}..."
     sudo sed -i '/^#/d;/^$/d' "${config}"
 
     # Remove any occurrences of nvidia-related modules in case some already exist.
@@ -464,7 +459,7 @@ configureMkinitcpio() {
     sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "${config}"
 
     # Ensure exactly one space between words and no space after '(' or before ')'
-    logMessage "Cleaning up brackets..."
+    logMessage "info" "Cleaning up brackets..."
     sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
 
     # Add nvidia nvidia_modeset nvidia_uvm nvidia_drm add the end of HOOKS=()
@@ -472,7 +467,7 @@ configureMkinitcpio() {
     sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "${config}"
 
     # Ensure exactly one space between words and no space after '(' or before ')'
-    logMessage "Cleaning up brackets..."
+    logMessage "info" "Cleaning up brackets..."
     sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
 
     # Remove kms from HOOKS=()
@@ -488,7 +483,7 @@ configureModprobe() {
 
     local config="/etc/modprobe.d/nvidia.conf"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "${config}" >/dev/null
     logMessage "info" "Configured ${config}."
@@ -501,7 +496,7 @@ configureGrubDefault() {
 
     local config="/etc/default/grub"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX in case it exists.
     # We dont want double arguments.
@@ -528,7 +523,7 @@ updateGrubConfig() {
 
     local config="/boot/grub/grub.cfg"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     sudo grub-mkconfig -o "${config}" || logMessage "error" "Failed to update ${config}."
     logMessage "info" "Configured ${config}"
@@ -644,7 +639,7 @@ removeMkinitcpio() {
 
     local config="/etc/mkinitcpio.conf"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     # Remove any lines that are commented out and contain nothing
     logMessage "info" "Cleaning up ${config} structure..."
@@ -673,7 +668,7 @@ removeModprobe() {
 
     local config="/etc/modprobe.d/nvidia.conf"
     backupConfig "${config}"
-    logMessage "Deleting ${config}..."
+    logMessage "info" "Deleting ${config}..."
 
     # Delete configuration file
     sudo rm -f "${config}" || logMessage "warning" "Failed to delete NVIDIA modprobe file."
@@ -686,7 +681,7 @@ removeGrubDefault() {
 
     local config="/etc/default/grub"
     backupConfig "${config}"
-    logMessage "Configuring ${config}..."
+    logMessage "info" "Configuring ${config}..."
 
     # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
     sudo sed -i 's/nvidia_drm\.modeset=1//g' "${config}"
