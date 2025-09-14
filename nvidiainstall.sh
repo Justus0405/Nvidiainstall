@@ -448,9 +448,10 @@ installNvidiaPackages() {
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
+        aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         # This is stupid, but without it nvidia-340xx-settings fails to install...
         sudo rm -rf "/usr/local/share/man/"
-        aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        aurHelperInstall "nvidia-340xx-settings"
         ;;
     esac
 
