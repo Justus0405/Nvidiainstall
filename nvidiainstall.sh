@@ -448,6 +448,8 @@ installNvidiaPackages() {
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
+        # This is stupid, but without it nvidia-340xx-settings fails to install...
+        sudo rm -rf "/usr/local/share/man/"
         aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     esac
@@ -482,9 +484,15 @@ configureMkinitcpio() {
     logMessage "info" "Cleaning up brackets..."
     sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
 
-    # Add nvidia nvidia_modeset nvidia_uvm nvidia_drm add the end of HOOKS=()
+    # Determine if either installing nvidia-340xx-dkms or later
     logMessage "info" "Adding NVIDIA modules..."
-    sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "${config}"
+    if [[ ${gpuDriver} == "nvidia-340xx-dkms" ]]; then
+        # Add nvidia nvidia_uvm at the end of HOOKS=()
+        sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_uvm)/' "${config}"
+    else
+        # Add nvidia nvidia_modeset nvidia_uvm nvidia_drm at the end of HOOKS=()
+        sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "${config}"
+    fi
 
     # Ensure exactly one space between words and no space after '(' or before ')'
     logMessage "info" "Cleaning up brackets..."
