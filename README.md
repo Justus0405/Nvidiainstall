@@ -27,7 +27,6 @@
 
 # Nvidia Driver Installer
 
-A fully automated tool for installing Nvidia drivers on Arch Linux.
 The Ultimate NVIDIA Toolbox in one bash script.
 
 # Hardware Support
@@ -45,7 +44,7 @@ The Ultimate NVIDIA Toolbox in one bash script.
 | **Ada Lovelace** | 2022    | GeForce RTX 40 series                |
 | **Blackwell**    | 2024    | GeForce RTX 50 series                |
 
-## Installation
+# Installation
 
 1. Clone the repository:
 
