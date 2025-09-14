@@ -1,119 +1,237 @@
 #!/usr/bin/env bash
 #
-# Automated nvidia driver installer
+# Automated NVIDIA Driver Installer for Arch Linux
 #
 # Author: Justus0405
 # Date: 12.10.2024
 # License: MIT
 
-# Version
-export version="1.1"
+export scriptVersion="2.0"
 
-# Color variables
+### COLOR CODES ###
+export black="\e[1;30m"
 export red="\e[1;31m"
 export green="\e[1;32m"
 export yellow="\e[1;33m"
+export blue="\e[1;34m"
+export purple="\e[1;35m"
 export cyan="\e[1;36m"
+export lightGray="\e[1;37m"
 export gray="\e[1;90m"
-export endColor="\e[0m"
+export lightRed="\e[1;91m"
+export lightGreen="\e[1;92m"
+export lightYellow="\e[1;93m"
+export lightBlue="\e[1;94m"
+export lightPurple="\e[1;95m"
+export lightCyan="\e[1;96m"
+export white="\e[1;97m"
+export bold="\e[1m"
+export faint="\e[2m"
+export italic="\e[3m"
+export underlined="\e[4m"
+export blinking="\e[5m"
+export reset="\e[0m"
 
-# Info variables
-export section="${gray}[${yellow}!${gray}]${endColor}"
-export info="${gray}[${cyan}i${gray}]${endColor}"
-export success="${gray}[${green}✓${gray}]${endColor}"
-export warning="${gray}[${red}!${gray}]${endColor}"
-export error="${red}error:${endColor}"
-
-#########################
-# CHECKS                #
-#########################
-
-checkArgs() {
-    # This Function reads the launch arguments
-    # in a loop and processes each one of them
-    #
-    while [[ "$1" != "" ]]; do
-        case "$1" in
-        -h | --help)
-            echo -e "Usage: nvidiainstall.sh [option] [option]"
-            echo -e ""
-            echo -e "Options:"
-            echo -e "  -h, --help      Show this help message"
-            echo -e "  -d, --debug     Run the script with logging"
-            echo -e "  -f, --force     Disable Nvidia check and force install"
-            exit 0
-            ;;
-        -d | --debug)
-            export logFile="/var/log/nvidiainstall.log"
-            export debugMode=true
-            ;;
-        -f | --force)
-            export forcedMode=true
-            ;;
-        *)
-            echo -e "Unknown option: $1"
-            echo -e "Use -h or --help for help."
-            exit 0
-            ;;
-        esac
-        shift
-    done
+### FUNCTIONS ###
+logMessage() {
+    local type="$1"
+    local message="$2"
+    case "${type}" in
+    "info" | "INFO")
+        echo -e "${gray}[${cyan}i${gray}]${reset} ${message}"
+        ;;
+    "done" | "DONE")
+        echo -e "${gray}[${green}✓${gray}]${reset} ${message}"
+        exit 0
+        ;;
+    "warning" | "WARNING")
+        echo -e "${gray}[${red}!${gray}]${reset} ${message}"
+        ;;
+    "error" | "ERROR")
+        echo -e "${red}ERROR${reset}: ${message}"
+        exit 1
+        ;;
+    *)
+        echo -e "[UNDEFINED] ${message}"
+        ;;
+    esac
 }
 
 checkSudo() {
-    #
-    # Checks EUID to see if the script is running as sudo
-    #
+    # Checks EUID to see if the script is running as sudo.
+
     if [[ "$EUID" -ne 0 ]]; then
-        echo -e "${error} This script must be run as root. Use sudo."
-        exit 1
+        logMessage "error" "This script must be run as root. Use sudo."
     fi
 
-    # Looks if the root user is permitted to execute
-    # commands as sudo, this is needed because executing
-    # commands with privilges in a bash script is a bit weird
-    # or it may be just a skill issue ¯\_(ツ)_/¯
+    # Looks if the root user is permitted to execute ommands as sudo,
+    # this is needed because executing commands with privilges in a bash script is a bit weird.
+    # Or it may be just a skill issue. ¯\_(ツ)_/¯
+
+    # If grep returns a non zero exit status, add root to the weel group.
     if ! groups root | grep -q "\bwheel\b"; then
-        echo -e "${info} Root is not in the wheel group. Adding root to the wheel group."
-        usermod -aG wheel root || {
-            echo -e "${error} Failed to add root to the wheel group."
-            exit 1
-        }
-        echo -e "${info} Root has been successfully added to the wheel group."
+        logMessage "info" "Root is not in the wheel group. Adding root to the wheel group."
+        usermod -aG wheel root || logMessage "error" "Failed to add root to the wheel group."
+        logMessage "info" "Root has been successfully added to the wheel group."
     else
-        echo -e "${info} Root is already in the wheel group."
+        logMessage "info" "Root is already in the wheel group."
     fi
+}
+
+checkAurHelper() {
+    # Checking if yay is installed.
+
+    if command -v yay >/dev/null 2>&1; then
+        logMessage "info" "Yay is installed."
+        export aurHelper="yay"
+    else
+        logMessage "info" "Yay is not installed."
+        installAurHelper
+    fi
+}
+
+installAurHelper() {
+    # Installing yay as aur helper.
+
+    logMessage "info" "Installing yay..."
+    git clone https://aur.archlinux.org/yay.git || logMessage "error" "Failed to download yay, are you connected to the internet?"
+    cd yay || logMessage "error" "Failed to enter the yay path"
+    makepkg -si --noconfirm || logMessage "error" "Failed to install yay"
+    logMessage "info" "Sucessfully installed yay."
 }
 
 checkNvidia() {
-    # Looks for any PCI device with the name "nvidia" in it
-    # This is to prevent something idk, saftey and such
-    # stuff
-    if lspci | grep -i nvidia &>/dev/null; then
-        echo -e "${green}Nvidia card detected.${endColor}"
-    else
-        echo -e "${error} No Nvidia card detected."
-        exit 1
+    # Detect NVIDIA GPU and decide driver package.
+
+    # Default values.
+    gpuInfo="Unknown"
+    gpuName="Unknown"
+    gpuGen="Unknown"
+    gpuDriver="Unknown"
+
+    gpuInfo=$(lspci -nn | grep -i 'VGA.*NVIDIA')
+    gpuName=$(echo "${gpuInfo}" | sed -E 's/.*NVIDIA Corporation //; s/ \[.*//')
+
+    case "${gpuName}" in
+    *"AD"*"Lovelace"* | *"Ada"*)
+        gpuGen="Ada Lovelace"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GA"* | *"Ampere"*)
+        gpuGen="Ampere"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"TU"* | *"Turing"*)
+        gpuGen="Turing"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GV"* | *"Volta"*)
+        gpuGen="Volta"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GP"* | *"Pascal"*)
+        gpuGen="Pascal"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GM"* | *"Maxwell"*)
+        gpuGen="Maxwell"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GK"* | *"Kepler"*)
+        gpuGen="Kepler"
+        gpuDriver="nvidia-470xx-dkms"
+        ;;
+    *"GF"* | *"Fermi"*)
+        gpuGen="Fermi"
+        gpuDriver="nvidia-390xx-dkms"
+        ;;
+    *"GT2"* | *"G9"* | *"G8"* | *"Tesla"*)
+        gpuGen="Tesla"
+        gpuDriver="nvidia-340xx-dkms"
+        ;;
+    *"G7"* | *"Curie"*)
+        gpuGen="Curie"
+        gpuDriver="unsupported"
+        ;;
+    *)
+        gpuGen="Unknown"
+        gpuDriver="manual"
+        ;;
+    esac
+
+    if [[ ${gpuDriver} == "unsupported" ]]; then
+        logMessage "error" "Curie and older are not supported anymore :/"
+    fi
+
+    if [[ ${gpuDriver} == "manual" ]]; then
+        chooseGpuDriver
     fi
 }
 
-#########################
-# TERMINAL INTERFACE    #
-#########################
+chooseGpuDriver() {
+    # In case the script couldnt identify the needed driver,
+    # ask the user which one they want to install.
 
-showMenu() {
-    # This is the main function with renders the selection menu
-    # Waiting for the input of the user for running further functions
-    # The function runs itself at the end ensuring coming back to it
-    # when the selected option finished running
     clear
     echo -e "\t┌──────────────────────────────────────────────────┐"
-    if [[ "$debugMode" = true ]]; then
-        echo -e "\t│ [i] Debug Mode Enabled                           │"
-    fi
-    if [[ "$forcedMode" = true ]]; then
-        echo -e "\t│ [i] Forced Mode Enabled                          │"
-    fi
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     We could not identify your GPU.      │"
+    echo -e "\t│  /  #  \    Please select which driver you       │"
+    echo -e "\t│ /_______\   want to manage.                      │"
+    echo -e "\t│                                                  │"
+    echo -e "\t│ [!] Curie and older are not supported anymore!   │"
+    echo -e "\t├──────────────────────────────────────────────────┤"
+    echo -e "\t│                                                  │"
+    echo -e "\t│ [1] nvidia-dkms         [Ada Lovelace and newer] │"
+    echo -e "\t│ [2] nvidia-470xx-dkms                   [Kepler] │"
+    echo -e "\t│ [3] nvidia-390xx-dkms                    [Fermi] │"
+    echo -e "\t│ [4] nvidia-340xx-dkms                    [Tesla] │"
+    echo -e "\t│                                                  │"
+    echo -e "\t├──────────────────────────────────────────────────┤"
+    echo -e "\t│ [0] Quit                                         │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
+    echo -e ""
+    echo -e "\t${green}Choose a menu option using your keyboard [1,2,3,4,0]${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    "1")
+        gpuDriver="nvidia-dkms"
+        ;;
+    "2")
+        gpuDriver="nvidia-470xx-dkms"
+        ;;
+    "3")
+        gpuDriver="nvidia-390xx-dkms"
+        ;;
+    "4")
+        gpuDriver="nvidia-340xx-dkms"
+        ;;
+    "0")
+        exitScript "Quit."
+        ;;
+    esac
+}
+
+backupConfig() {
+    # Create a copy of the given file with the .bak extention.
+
+    local config="$1"
+    logMessage "info" "Creating backup of ${config}"
+    sudo cp "${config}" "${config}.bak"
+    logMessage "info" "Backup of ${config} created."
+}
+
+### TERMINAL INTERFACE ###
+showMenu() {
+    # This is the main function which renders the selection menu.
+    # Waiting for the input of the user for running further functions.
+    # The function runs itself at the end ensuring coming back to it
+    # when the selected option finished running.
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
     echo -e "\t│                                                  │"
     echo -e "\t│ Choose option:                                   │"
     echo -e "\t│                                                  │"
@@ -126,12 +244,11 @@ showMenu() {
     echo -e "\t│ [0] Quit                                         │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
-    echo -e "\t${green}Choose a menu option using your keyboard [1,2,3,4,0]${endColor}"
+    echo -e "\t${green}Choose a menu option using your keyboard [1,2,3,4,0]${reset}"
 
-    # Use -n1 to read a single character without the need to press enter
     read -rsn1 option
 
-    case "$option" in
+    case "${option}" in
     "1")
         confirmInstallation
         ;;
@@ -145,46 +262,94 @@ showMenu() {
         showAbout
         ;;
     "0")
-        clear
-        exit 0
+        exitScript "Quit."
         ;;
     esac
 
-    # Loop back to menu after an option is handled
+    # Loop back to menu after an option is handled.
     showMenu
 }
 
-confirmInstallation() {
-    # This is just a sanity check for the user
-    # Also used to initiate the logging if
-    # debugMode is set to true
-    # The weird [yY][eE][sS]|[yY] syntax makes it
-    # possible to answer either with y or yes in
-    # any capitalization
+showDeviceInformation() {
+    # Show information about gpu name, generation and recommended driver.
+
     clear
-    echo -e "${info} This script will install Nvidia drivers and modify system configurations."
-    echo -e "${warning} Note: This script only supports generation Maxwell or newer, Use at your own risk!"
+    echo -e ""
+    echo -e "\tDevice Information:"
+    echo -e ""
+    echo -e "\tDetected GPU: ${gpuName}"
+    echo -e "\tGeneration: ${gpuGen}"
+    echo -e "\tRecommended driver: ${gpuDriver}"
+    echo -e ""
+    echo -e "\t${green}Press any button to return${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    *) ;;
+
+    esac
+}
+
+showAbout() {
+    # Just a bit of info.
+    # Also fetches the list of contributers regarding this project and displays them in a list.
+
+    githubResponse=$(curl -s "https://api.github.com/repos/Justus0405/Nvidiainstall/contributors")
+    clear
+    echo -e ""
+    echo -e "\tAbout Nvidiainstall:"
+    echo -e ""
+    echo -e "\tVersion: ${scriptVersion}"
+    echo -e "\tAuthor : Justus0405"
+    echo -e "\tSource : https://github.com/Justus0405/Nvidiainstall"
+    echo -e "\tLicense: MIT"
+    echo -e "\tContributors:"
+
+    echo "${githubResponse}" | grep '"login":' | awk -F '"' '{print $4}' | while read -r contributors; do
+        echo -e "\t\t\e[0;35m${contributors}\e[m"
+    done
+
+    echo -e ""
+    echo -e "\t${green}Press any button to return${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    *) ;;
+
+    esac
+}
+
+### INSTALLATION STEPS ###
+confirmInstallation() {
+    # Ask the user for consent :3
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     This script will install NVIDIA      │"
+    echo -e "\t│  /  #  \    drivers and modify system            │"
+    echo -e "\t│ /_______\   configurations.                      │"
+    echo -e "\t│                                                  │"
+    echo -e "\t│ [!] Proceed with caution!                        │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
+    echo -e ""
     read -rp "Do you want to proceed? (y/N): " confirm
-    case "$confirm" in
+    case "${confirm}" in
     [yY][eE][sS] | [yY])
-        echo -e "${green}Proceeding with installation...${endColor}"
-        if [[ "$debugMode" = true ]]; then
-            echo -e "${info} Started logging at $logFile${endColor}"
-            exec > >(tee -i "$logFile") 2>&1
-        fi
+        echo -e "${green}Proceeding with installation...${reset}"
         installationSteps
         ;;
     *)
-        echo -e "${red}Installation cancelled.${endColor}"
-        exit 0
+        exitScript "Installation cancelled."
         ;;
     esac
 }
 
 installationSteps() {
     # Just a simple function handling each steps because
-    # handling it everywere else looked ugly
-    #
+    # handling it everywere else looked ugly.
 
     # Step 1
     updateSystem
@@ -214,37 +379,215 @@ installationSteps() {
     confirmReboot
 }
 
-confirmUninstallation() {
-    # This is just a sanity check for the user, Part 2
-    # Also used to initiate the logging if
-    # debugMode is set to true
-    # The weird [yY][eE][sS]|[yY] syntax makes it
-    # possible to answer either with y or yes in
-    # any capitalization
-    clear
-    echo -e "${warning} This will completely uninstall all Nvidia drivers and modify system configurations."
-    echo -e "${warning} Note: This script only supports the arch repo not the AUR, Use at your own risk!"
-    read -rp "Do you want to proceed? (y/N): " confirm
-    case "$confirm" in
+updateSystem() {
+    # Updating system because why not?
+
+    logMessage "info" "Updating System..."
+    sudo pacman -Syyu || logMessage "error" "Could not update system, are you connected to the internet?"
+    logMessage "info" "Updated System."
+}
+
+checkKernelHeaders() {
+    # Check the installed kernel and installs the associated headers.
+    # this is needed for the kernel to load the nvidia modules.
+
+    logMessage "info" "Installing Kernel Modules..."
+    kernel=$(uname -r)
+    if [[ "${kernel}" == *"zen"* ]]; then
+        # Zen
+        logMessage "info" "Detected Kernel: linux-zen"
+        sudo pacman -S --needed --noconfirm linux-zen-headers || logMessage "error" "Could not install kernel modules."
+    elif [[ "${kernel}" == *"lts"* ]]; then
+        # LTS
+        logMessage "info" "Detected Kernel: linux-lts"
+        sudo pacman -S --needed --noconfirm linux-lts-headers || logMessage "error" "Could not install kernel modules."
+    elif [[ "$kernel" == *"hardened"* ]]; then
+        # "HARDENED" ~Debitor
+        logMessage "info" "Detected Kernel: linux-hardened"
+        sudo pacman -S --needed --noconfirm linux-hardened-headers || logMessage "error" "Could not install kernel modules."
+    else
+        # Regular Linux Kernel
+        logMessage "info" "Detected Kernel: linux"
+        sudo pacman -S --needed --noconfirm linux-headers || logMessage "error" "Could not install kernel modules."
+    fi
+    logMessage "info" "Installed Kernel Modules."
+}
+
+installNvidiaPackages() {
+    # Install the nvidia drivers and needed dependencies, if not present.
+
+    logMessage "info" "Identified Generation: ${gpuGen}"
+    logMessage "info" "Installing ${gpuDriver} and dependencies..."
+
+    case "${gpuDriver}" in
+    "nvidia-dkms")
+        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        ;;
+    "nvidia-470xx-dkms")
+        checkAurHelper
+        yay -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        ;;
+    "nvidia-390xx-dkms")
+        checkAurHelper
+        yay -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        ;;
+    "nvidia-340xx-dkms")
+        checkAurHelper
+        yay -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages."
+        ;;
+    esac
+
+    logMessage "info" "Installed NVIDIA packages and dependencies."
+}
+
+configureMkinitcpio() {
+    # This was just pure insanity to impliment with the intent
+    # of not breaking previous configurations. (But it works :3)
+    # This is for adding the nvidia modules to the /etc/mkinitcpio.conf file.
+    # Firstly it creates a backup of the original file.
+    # Then it removes any lines that are commented out and contain nothing. (Not necessary but pretty)
+    # Then removes any previously added nvidia modules, this could fix previously wrong configurations.
+    # Ensures the () dont have any spaces at the beginning and at the end.
+    # Then the modules get added in the correct formatting and order without deleting previous modules not related to nvidia.
+    # At the end the kms hook gets removed, which is a recommeded step because it disables any other non-nvidia gpu.
+
+    local config="/etc/mkinitcpio.conf"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
+
+    # Remove any lines that are commented out and contain nothing
+    logMessage "Cleaning up ${config}..."
+    sudo sed -i '/^#/d;/^$/d' "${config}"
+
+    # Remove any occurrences of nvidia-related modules in case some already exist.
+    # We dont want double arguments.
+    sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "${config}"
+
+    # Ensure exactly one space between words and no space after '(' or before ')'
+    logMessage "Cleaning up brackets..."
+    sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
+
+    # Add nvidia nvidia_modeset nvidia_uvm nvidia_drm add the end of HOOKS=()
+    logMessage "info" "Adding NVIDIA modules..."
+    sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "${config}"
+
+    # Ensure exactly one space between words and no space after '(' or before ')'
+    logMessage "Cleaning up brackets..."
+    sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
+
+    # Remove kms from HOOKS=()
+    logMessage "info" "Removing kms hook..."
+    sudo sed -i 's/\bkms \b//g' "${config}"
+
+    logMessage "info" "Configured ${config}."
+}
+
+configureModprobe() {
+    # "options nvidia_drm modeset=1 fbdev=1" straight from Hyprland Wiki.
+    # This isnt needed but still good for compatibility.
+
+    local config="/etc/modprobe.d/nvidia.conf"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
+
+    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "${config}" >/dev/null
+    logMessage "info" "Configured ${config}."
+}
+
+configureGrubDefault() {
+    # Function to add "nvidia_drm.modeset=1" to /etc/default/grub.
+    # The weird sed syntax ensures that the argument only gets added
+    # and not replacing the line, keeping previous configuration safe.
+
+    local config="/etc/default/grub"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
+
+    # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX in case it exists.
+    # We dont want double arguments.
+    sudo sed -i 's/nvidia_drm\.modeset=1//g' "${config}"
+
+    # Add nvidia_drm.modeset=1 to GRUB_CMDLINE_LINUX
+    logMessage "info" "Adding NVIDIA modeset to ${config}..."
+    sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/!b;/nvidia_drm.modeset=1/!s/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)/\1 nvidia_drm.modeset=1/' "${config}"
+    logMessage "info" "Configured ${config}."
+}
+
+regenerateInitramfs() {
+    # Regenerates the initramfs to load the nvidia modules.
+    # Prepare for high CPU usage.
+
+    logMessage "info" "Regenerating initramfs... (this may take a while)"
+    sudo mkinitcpio -P || logMessage "error" "Failed to regenerate the initramfs."
+    logMessage "info" "Regernerated initramfs."
+}
+
+updateGrubConfig() {
+    # Updates the grub config at /boot/grub/grub.cfg
+    # After /etc/default/grub was changed
+
+    local config="/boot/grub/grub.cfg"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
+
+    sudo grub-mkconfig -o "${config}" || logMessage "error" "Failed to update ${config}."
+    logMessage "info" "Configured ${config}"
+}
+
+confirmReboot() {
+    # Asks the user to reboot to apply changes.
+
+    echo -e ""
+    echo -e "${green}Action complete.${reset}"
+    read -rp "Would you like to reboot now? (y/N): " rebootNow
+    case "${rebootNow}" in
     [yY][eE][sS] | [yY])
-        echo -e "${green}Proceeding with uninstallation...${endColor}"
-        if [[ "$debugMode" = true ]]; then
-            echo -e "${info} Started logging at $logFile${endColor}"
-            exec > >(tee -i "$logFile") 2>&1
-        fi
+        sudo reboot now
+        ;;
+    *)
+        logMessage "info" "Please reboot your system later to apply changes."
+        echo -e ""
+        echo -e "\t${green}Press any button to return${reset}"
+
+        read -rsn1 option
+
+        case "${option}" in
+        *) ;;
+
+        esac
+        ;;
+    esac
+}
+
+### UNINSTALLATION STEPS ###
+confirmUninstallation() {
+    # Same as confirmInstallation
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     This script will ${red}uninstall${reset} NVIDIA    │"
+    echo -e "\t│  /  #  \    drivers and modify system            │"
+    echo -e "\t│ /_______\   configurations.                      │"
+    echo -e "\t│                                                  │"
+    echo -e "\t│ [!] Proceed with caution!                        │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
+    echo -e ""
+    read -rp "Do you want to proceed? (y/N): " confirm
+    case "${confirm}" in
+    [yY][eE][sS] | [yY])
+        echo -e "${green}Proceeding with uninstallation...${reset}"
         uninstallationSteps
         ;;
     *)
-        echo -e "${red}Uninstallation cancelled.${endColor}"
-        exit 0
+        exitScript "Uninstallation cancelled."
         ;;
     esac
 }
 
 uninstallationSteps() {
     # Just a simple function handling each steps because
-    # handling it everywere else looked ugly, Part 2
-    #
+    # handling it everywere else looked ugly, Part 2.
 
     # Step 1
     removeNvidiaPackages
@@ -268,404 +611,105 @@ uninstallationSteps() {
     confirmReboot
 }
 
-showDeviceInformation() {
-    # Looks for any PCI device with the name "nvidia" in it
-    # and lists them here
-    #
-    clear
-    echo -e ""
-    echo -e "\tDevice Information:"
-    echo -e ""
-    gpu=$(lspci | grep -i 'nvidia' || true)
-    if [[ -z "$gpu" ]]; then
-        gpu="No Nvidia card detected"
-    fi
-    echo -e "$gpu"
-    echo -e ""
-    echo -e "\t${green}Press any button to return${endColor}"
-
-    # Use -n1 to read a single character without the need to press enter
-    read -rsn1 option
-
-    case "$option" in
-    *) ;;
-
-    esac
-}
-
-showAbout() {
-    # Just a bit of info
-    # Also fetches the list of contributers regarding this project and
-    # displays them in a list
-    githubResponse=$(curl -s "https://api.github.com/repos/Justus0405/Nvidiainstall/contributors")
-    clear
-    echo -e ""
-    echo -e "\tAbout Nvidiainstall:"
-    echo -e ""
-    echo -e "\tVersion: $version"
-    echo -e "\tAuthor : Justus0405"
-    echo -e "\tSource : https://github.com/Justus0405/Nvidiainstall"
-    echo -e "\tLicense: MIT"
-    echo -e "\tContributers:"
-
-    echo "$githubResponse" | grep '"login":' | awk -F '"' '{print $4}' | while read -r contributors; do
-        echo -e "\t\t\e[0;35m${contributors}\e[m"
-    done
-
-    echo -e ""
-    echo -e "\t${green}Press any button to return${endColor}"
-
-    # Use -n1 to read a single character without the need to press enter
-    read -rsn1 option
-
-    case "$option" in
-    *) ;;
-
-    esac
-}
-
-#########################
-# INSTALLATION STEPS    #
-#########################
-
-updateSystem() {
-    #
-    # Stay up to date folks
-    #
-    echo -e "${section} Updating system..."
-    sudo pacman -Syyu || {
-        echo -e "${error} Could not update system."
-        exit 1
-    }
-    echo -e "${success} System updated."
-}
-
-checkKernelHeaders() {
-    # Check the installed kernel and installs
-    # the associated headers, this is needed
-    # for the kernel to load the nvidia modules
-    echo -e "${section} Installing kernel modules..."
-    kernelVersion=$(uname -r)
-    if [[ "$kernelVersion" == *"zen"* ]]; then
-        echo -e "${info} Detected kernel: zen"
-        sudo pacman -S --needed --noconfirm linux-zen-headers || {
-            echo -e "${error} Could not install kernel modules."
-            exit 1
-        }
-    elif [[ "$kernelVersion" == *"lts"* ]]; then
-        echo -e "${info} Detected kernel: lts"
-        sudo pacman -S --needed --noconfirm linux-lts-headers || {
-            echo -e "${error} Could not install kernel modules."
-            exit 1
-        }
-    elif [[ "$kernelVersion" == *"hardened"* ]]; then
-        echo -e "${info} Detected kernel: hardened"
-        sudo pacman -S --needed --noconfirm linux-hardened-headers || {
-            echo -e "${error} Could not install kernel modules."
-            exit 1
-        }
-    else
-        echo -e "${info} Detected kernel: regular"
-        sudo pacman -S --needed --noconfirm linux-headers || {
-            echo -e "${error} Could not install kernel modules."
-            exit 1
-        }
-    fi
-    echo -e "${success} Kernel modules installed."
-}
-
-installNvidiaPackages() {
-    #
-    # Install the nvidia drivers and needed dependencies if not present
-    #
-    echo -e "${section} Installing Nvidia packages..."
-    sudo pacman -S --needed --noconfirm nvidia-dkms libglvnd nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || {
-        echo -e "${error} Could not install Nvidia packages."
-        exit 1
-    }
-    echo -e "${success} Nvidia packages installed."
-}
-
-configureMkinitcpio() {
-    # This was just pure insanity to impliment with the intent
-    # of not breaking previous configurations (But it works :3)
-    # This is for adding the nvidia modules to the /etc/mkinitcpio.conf file
-    # Firstly it creates a backup of the original file
-    # Then it removes any lines that are commented out and contain nothing (Not necessary but pretty)
-    # Then removes any previously added nvidia modules, this could fix previously wrong configurations
-    # Ensures the () dont have any spaces at the beginning and at the end
-    # Then the modules get added in the correct formatting and order without deleting previous modules
-    # not related to nvidia
-    # At the end the kms hook gets removed, which is a recommeded step because it disables any other
-    # non-nvidia gpu
-    echo -e "${section} Configuring mkinitcpio..."
-    mkinitcpioConf="/etc/mkinitcpio.conf"
-
-    if [[ -f "$mkinitcpioConf" ]]; then
-        # Backup existing configuration file if it exists
-        sudo cp "$mkinitcpioConf" "$mkinitcpioConf.bak"
-        echo -e "${info} Backup of $mkinitcpioConf created."
-
-        # Remove any lines that are commented out and contain nothing
-        echo -e "${info} Cleaning up $mkinitcpioConf structure..."
-        sudo sed -i '/^#/d;/^$/d' "$mkinitcpioConf"
-
-        if grep -q 'MODULES=.*nvidia' "$mkinitcpioConf"; then
-            # Remove any occurrences of nvidia-related modules
-            echo -e "${info} Cleaning up existing Nvidia modules..."
-            sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$mkinitcpioConf"
-
-            # Ensure exactly one space between words and no space after '(' or before ')'
-            sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "$mkinitcpioConf"
-        fi
-
-        # Now, append the nvidia modules in the correct order if they are not already there
-        if ! grep -q 'MODULES=.*nvidia nvidia_modeset nvidia_uvm nvidia_drm' "$mkinitcpioConf"; then
-            echo -e "${info} Adding Nvidia modules..."
-            sudo sed -i 's/^MODULES=(\([^)]*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' "$mkinitcpioConf"
-
-            # Ensure exactly one space between words and no space after '(' or before ')'
-            sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "$mkinitcpioConf"
-        else
-            echo -e "${info} Nvidia modules are already present in the correct order."
-        fi
-
-        # Removing kms hook if it exists
-        if grep -q '\bkms\b' "$mkinitcpioConf"; then
-            echo -e "${info} Removing kms hook..."
-            sudo sed -i 's/\bkms \b//g' "$mkinitcpioConf"
-        else
-            echo -e "${info} kms hook is not present."
-        fi
-
-        echo -e "${success} $mkinitcpioConf updated."
-    else
-        echo -e "${error} $mkinitcpioConf not found."
-        exit 1
-    fi
-}
-
-# WILL BE DEPRICATED WITH LATEST MAJOR RELEASE
-configureModprobe() {
-    # This function looks for an nvidia.conf file at /etc/modprobe.d/
-    # If it exists, backs it up and creates a new one with the content
-    # "options nvidia_drm modeset=1 fbdev=1" straight from Hyprland Wiki
-    # This isnt needed but still good for compatibility
-    echo -e "${section} Creating Nvidia modprobe file..."
-    nvidiaConf="/etc/modprobe.d/nvidia.conf"
-
-    # Backup existing configuration file if it exists
-    if [[ -f "$nvidiaConf" ]]; then
-        sudo cp "$nvidiaConf" "${nvidiaConf}.bak"
-        echo -e "${info} Backup of $nvidiaConf created."
-    fi
-
-    # Create new configuration file
-    echo -e "${info} Creating $nvidiaConf..."
-    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee "$nvidiaConf" >/dev/null || {
-        echo -e "${error} Failed to create Nvidia modprobe file."
-        exit 1
-    }
-    echo -e "${success} Nvidia modprobe file created."
-
-}
-
-configureGrubDefault() {
-    # Function to add "nvidia_drm.modeset=1" to /etc/default/grub
-    # only if it not exists, also backs up the grub config before
-    # making these changes
-    # The weird sed syntax ensures that the argument only gets added
-    # and not replacing the line, keeping previous configuration safe
-    echo -e "${section} Configuring GRUB default..."
-    grubConf="/etc/default/grub"
-
-    if [[ -f "$grubConf" ]]; then
-        # Backup existing configuration file if it exists
-        sudo cp "$grubConf" "$grubConf.bak"
-        echo -e "${info} Backup of $grubConf created."
-
-        # Update the GRUB configuration
-        echo -e "${info} Adding Nvidia modeset to $grubConf..."
-        sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/!b;/nvidia_drm.modeset=1/!s/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)/\1 nvidia_drm.modeset=1/' "$grubConf"
-        echo -e "${success} $grubConf updated."
-    else
-        echo -e "${error} $grubConf not found."
-        exit 1
-    fi
-}
-
-regenerateInitramfs() {
-    # Regenerates the initramfs
-    # to load the nvidia modules
-    # Prepare for high CPU usage
-    echo -e "${section} Regenerating initramfs..."
-    sudo mkinitcpio -P || {
-        echo -e "${error} Failed to regenerate the initramfs."
-        exit 1
-    }
-    echo -e "${success} initramfs regenerated."
-}
-
-updateGrubConfig() {
-    # Updates the grub config at /boot/grub/grub.cfg
-    # After /etc/default/grub was changed
-    #
-    bootConf="/boot/grub/grub.cfg"
-    echo -e "${section} Updating GRUB config..."
-    sudo grub-mkconfig -o "$bootConf" || {
-        echo -e "${error} Failed to update $bootConf."
-        exit 1
-    }
-    echo -e "${success} $bootConf updated."
-}
-
-confirmReboot() {
-    # Asks the user to reboot to apply changes
-    # properly, if no is selected the script
-    # will return to showMenu
-    echo -e ""
-    echo -e "${green}Action complete.${endColor}"
-    if [[ "$debugMode" = true ]]; then
-        echo -e "${info} Log saved at $logFile${endColor}"
-    fi
-    read -rp "Would you like to reboot now? (y/N): " rebootNow
-    case "$rebootNow" in
-    [yY][eE][sS] | [yY])
-        sudo reboot now
-        ;;
-    *)
-        echo -e "${info} Please reboot your system later to apply changes."
-        echo -e ""
-        echo -e "\t${green}Press any button to return${endColor}"
-
-        # Use -n1 to read a single character without the need to press enter
-        read -rsn1 option
-
-        case "$option" in
-        *) ;;
-
-        esac
-        ;;
-    esac
-}
-
-#########################
-# UNINSTALLATION STEPS  #
-#########################
-
 removeNvidiaPackages() {
-    #
-    # Uninstall the nvidia drivers, configs and unused dependencies
-    #
-    echo -e "${section} Uninstalling Nvidia packages..."
-    sudo pacman -Rn nvidia-dkms nvidia-settings || {
-        echo -e "${error} Could not uninstall Nvidia packages."
-        exit 1
-    }
-    echo -e "${success} Nvidia packages uninstalled."
+    # Uninstall the nvidia drivers, configs and unused dependencies.
+
+    logMessage "info" "Identified Generation: ${gpuGen}"
+    logMessage "info" "Uninstalling ${gpuDriver} and dependencies..."
+
+    case "${gpuDriver}" in
+    "nvidia-dkms")
+        sudo pacman -Rns --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    "nvidia-470xx-dkms")
+        checkAurHelper
+        yay -Rns --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    "nvidia-390xx-dkms")
+        checkAurHelper
+        yay -Rns --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    "nvidia-340xx-dkms")
+        checkAurHelper
+        yay -Rns --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    esac
+
+    logMessage "info" "Uninstalled NVIDIA packages and dependencies."
 }
 
 removeMkinitcpio() {
-    # Same as the configureMkinitcpio() function but without
-    # adding the nvidia modules
-    # Adds back the kms hook
-    echo -e "${section} Removing mkinitcpio modules..."
-    mkinitcpioConf="/etc/mkinitcpio.conf"
+    # Same as the configureMkinitcpio() function but without adding the nvidia modules.
+    # Also adds back the kms hook.
 
-    if [[ -f "$mkinitcpioConf" ]]; then
-        # Backup existing configuration file if it exists
-        sudo cp "$mkinitcpioConf" "$mkinitcpioConf.bak-uninstall"
-        echo -e "${info} Backup of $mkinitcpioConf created."
+    local config="/etc/mkinitcpio.conf"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
 
-        # Remove any lines that are commented out and contain nothing
-        echo -e "${info} Cleaning up $mkinitcpioConf structure..."
-        sudo sed -i '/^#/d;/^$/d' "$mkinitcpioConf"
+    # Remove any lines that are commented out and contain nothing
+    logMessage "info" "Cleaning up ${config} structure..."
+    sudo sed -i '/^#/d;/^$/d' "${config}"
 
-        if grep -q 'MODULES=.*nvidia' "$mkinitcpioConf"; then
-            # Remove any occurrences of nvidia-related modules
-            echo -e "${info} Removing Nvidia modules..."
-            sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "$mkinitcpioConf"
+    # Remove any occurrences of nvidia-related modules
+    logMessage "info" "Removing NVIDIA modules..."
+    sudo sed -i 's/\b\(nvidia\|nvidia_modeset\|nvidia_uvm\|nvidia_drm\)\b//g' "${config}"
 
-            # Ensure exactly one space between words and no space after '(' or before ')'
-            sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "$mkinitcpioConf"
-        fi
+    # Ensure exactly one space between words and no space after '(' or before ')'
+    sudo sed -i 's/ ( /(/g; s/ )/)/g; s/( */(/; s/ *)/)/; s/ \+/ /g' "${config}"
 
-        # Add back the kms hook
-        if grep -q '\bkms\b' "$mkinitcpioConf"; then
-            echo -e "${info} kms hook is already present."
-        else
-            echo -e "${info} Adding kms hook..."
-            sudo sed -i 's/modconf/& kms/' "$mkinitcpioConf"
-        fi
+    # Remove kms from HOOKS=() in case it already exists.
+    # We dont want double arguments.
+    sudo sed -i 's/\bkms \b//g' "${config}"
 
-        echo -e "${success} $mkinitcpioConf updated."
-    else
-        echo -e "${error} $mkinitcpioConf not found."
-        exit 1
-    fi
+    # Add kms to HOOKS=()
+    logMessage "info" "Adding kms hook..."
+    sudo sed -i 's/modconf/& kms/' "${config}"
+
+    logMessage "info" "Configured ${config}."
 }
 
-# WILL BE DEPRICATED WITH LATEST MAJOR RELEASE
 removeModprobe() {
-    # Creates a backup of the /etc/modprobe.d/nvidia.conf file
-    # and deletes the original one
-    #
-    echo -e "${section} Deleting Nvidia modprobe file..."
-    nvidiaConf="/etc/modprobe.d/nvidia.conf"
+    # Creates a backup of the /etc/modprobe.d/nvidia.conf file and deletes the original one.
 
-    # Backup existing configuration file if it exists
-    if [[ -f "$nvidiaConf" ]]; then
-        sudo cp "$nvidiaConf" "${nvidiaConf}.bak-uninstall"
-        echo -e "${info} Backup of $nvidiaConf created."
-    fi
+    local config="/etc/modprobe.d/nvidia.conf"
+    backupConfig "${config}"
+    logMessage "Deleting ${config}..."
 
     # Delete configuration file
-    sudo rm -f "$nvidiaConf" || {
-        echo -e "${warning} Failed to delete Nvidia modprobe file."
-    }
-    echo -e "${success} Nvidia modprobe file deleted."
-
+    sudo rm -f "${config}" || logMessage "warning" "Failed to delete NVIDIA modprobe file."
+    logMessage "info" "Deleted ${config}."
 }
 
 removeGrubDefault() {
     # Creates a backup of the /etc/default/grub file
-    # Removes nvidia_drm.modeset=1 from
-    # GRUB_CMDLINE_LINUX
-    echo -e "${section} Configuring GRUB default..."
-    grubConf="/etc/default/grub"
+    # Removes nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
 
-    if [[ -f "$grubConf" ]]; then
-        # Backup existing configuration file if it exists
-        sudo cp "$grubConf" "$grubConf.bak-uninstall"
-        echo -e "${info} Backup of $grubConf created."
+    local config="/etc/default/grub"
+    backupConfig "${config}"
+    logMessage "Configuring ${config}..."
 
-        # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
-        echo -e "${info} Removing nvidia modeset from $grubConf..."
-        sudo sed -i 's/nvidia_drm\.modeset=1//g' "$grubConf"
-        echo -e "${success} $grubConf updated."
-    else
-        echo -e "${error} $grubConf not found."
-        exit 1
-    fi
+    # Remove nvidia_drm.modeset=1 from GRUB_CMDLINE_LINUX
+    sudo sed -i 's/nvidia_drm\.modeset=1//g' "${config}"
+    logMessage "info" "Configured ${config}."
 }
 
-#########################
-# PROGRAMM START        #
-#########################
+exitScript() {
+    local message="$1"
+    echo -e ""
+    echo -e "${red}${message}${reset}"
+    exit 0
+}
+
+### PROGRAM START ###
 
 # Step 1: Set up trap for SIGINT (CTRL+C)
-trap 'echo -e "${red}Exited${endColor}"; exit 0' SIGINT
+trap 'exitScript "Aborted!"' SIGINT
 
-# Step 2: Check launch arguments for extra functionality
-checkArgs "$@"
-
-# Step 3: Check if running as sudo
+# Step 2: Check if running as sudo
 checkSudo
 
-# Step 4: Check if nvidia card is present
-if [[ "$forcedMode" != true ]]; then
-    checkNvidia
-fi
+# Step 3: Identify NVIDIA card, if that fails prompt the user to select a driver
+checkNvidia
 
-# Step 5: Show selection menu
+# Step 4: Show main selection menu
 showMenu
