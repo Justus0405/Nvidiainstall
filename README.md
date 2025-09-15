@@ -31,18 +31,25 @@ The Ultimate NVIDIA Toolbox in one bash script.
 
 # Hardware Support
 
-| Codename         | Release | Series                               |
-| ---------------- | ------- | ------------------------------------ |
-| **Tesla**        | 2006    | GeForce 8 series, GTX 200 / 300      |
-| **Fermi**        | 2010    | GeForce 400 / 500 series             |
-| **Kepler**       | 2012    | GeForce 600 / 700 series             |
-| **Maxwell**      | 2014    | GeForce 900 series                   |
-| **Pascal**       | 2016    | GeForce GTX 10 series                |
-| **Volta**        | 2017    | Tesla V100, Titan V                  |
-| **Turing**       | 2018    | GeForce RTX 20 series, GTX 16 series |
-| **Ampere**       | 2020    | GeForce RTX 30 series                |
-| **Ada Lovelace** | 2022    | GeForce RTX 40 series                |
-| **Blackwell**    | 2024    | GeForce RTX 50 series                |
+| Codename         | Release   | Support / Recommended Driver   |
+| ---------------- | --------- | ------------------------------ |
+| **Fahrenheit**   | 1998-2000 | Unsupported                    |
+| **Celsius**      | 1999-2005 | Unsupported                    |
+| **Kelvin**       | 2001-2003 | Unsupported                    |
+| **Rankine**      | 2003-2005 | Unsupported                    |
+| **Curie**        | 2003-2013 | Unsupported                    |
+| **Tesla**        | 2006-2013 | nvidia-340xx-dkms              |
+| **VLIW Vec4**    | 2010-2013 | nvidia-390xx-dkms              |
+| **Fermi**        | 2010-2016 | nvidia-390xx-dkms              |
+| **Kepler**       | 2012-2018 | nvidia-470xx-dkms              |
+| **Maxwell**      | 2014-2019 | nvidia-dkms                    |
+| **Pascal**       | 2016-2021 | nvidia-dkms                    |
+| **Volta**        | 2017-2020 | nvidia-dkms                    |
+| **Turing**       | 2018-2022 | nvidia-dkms / nvidia-open-dkms |
+| **Ampere**       | 2020-2025 | nvidia-dkms / nvidia-open-dkms |
+| **Ada Lovelace** | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
+| **Hopper**       | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
+| **Blackwell**    | 2024-2025 | nvidia-dkms / nvidia-open-dkms |
 
 # Installation
 

@@ -100,6 +100,9 @@ EOF
 }
 
 aurHelperInstall() {
+    # Install with yay using a non-root user.
+    # This is because yay complains when running as root.
+
     local packages="$1"
     local targetUser="${SUDO_USER:-$(whoami)}"
 
@@ -107,6 +110,9 @@ aurHelperInstall() {
 }
 
 aurHelperUninstall() {
+    # Uninstall with yay using a non-root user.
+    # This is because yay complains when running as root.
+
     local packages="$1"
     local targetUser="${SUDO_USER:-$(whoami)}"
 
@@ -115,6 +121,9 @@ aurHelperUninstall() {
 
 checkNvidia() {
     # Detect NVIDIA GPU and decide driver package.
+    # Index: https://www.techpowerup.com/gpu-specs/
+
+    # TODO: Add open source driver support
 
     # Default values.
     gpuGen="Unknown"
@@ -124,44 +133,72 @@ checkNvidia() {
     gpuName=$(echo "${gpuInfo}" | sed -E 's/.*NVIDIA Corporation //; s/ \[.*//')
 
     case "${gpuName}" in
-    *"AD"*"Lovelace"* | *"Ada"*)
+    *"GB10"* | *"GB20"*)
+        gpuGen="Blackwell"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"GH10"*)
+        gpuGen="Hopper"
+        gpuDriver="nvidia-dkms"
+        ;;
+    *"AD10"*)
         gpuGen="Ada Lovelace"
         gpuDriver="nvidia-dkms"
         ;;
-    *"GA"* | *"Ampere"*)
+    *"GA10"*)
         gpuGen="Ampere"
         gpuDriver="nvidia-dkms"
         ;;
-    *"TU"* | *"Turing"*)
+    *"TU10"* | *"TU11"*)
         gpuGen="Turing"
         gpuDriver="nvidia-dkms"
         ;;
-    *"GV"* | *"Volta"*)
+    *"GV10"*)
         gpuGen="Volta"
         gpuDriver="nvidia-dkms"
         ;;
-    *"GP"* | *"Pascal"*)
+    *"GP10"*)
         gpuGen="Pascal"
         gpuDriver="nvidia-dkms"
         ;;
-    *"GM"* | *"Maxwell"*)
+    *"GM10"* | *"GM20"*)
         gpuGen="Maxwell"
         gpuDriver="nvidia-dkms"
         ;;
-    *"GK"* | *"Kepler"*)
+    *"EXK107"* | *"GK10"* | *"GK11"* | *"GK18"* | *"GK20"* | *"GK21"*)
         gpuGen="Kepler"
         gpuDriver="nvidia-470xx-dkms"
         ;;
-    *"GF"* | *"Fermi"*)
+    *"EXMF1"* | *"GF10"* | *"GF11"*)
         gpuGen="Fermi"
         gpuDriver="nvidia-390xx-dkms"
         ;;
-    *"GT2"* | *"G9"* | *"G8"* | *"Tesla"*)
+    *"Kal-El"* | *"Tegra 2"* | *"Wayne"*)
+        gpuGen="VLIW Vec4"
+        gpuDriver="nvidia-390xx-dkms"
+        ;;
+    *"C77"* | *"C78"* | *"C79"* | *"C7A"* | *"G80"* | *"G84"* | *"G86"* | *"G92"* | *"G94"* | *"G96"* | *"G98"* | *"ION"*)
         gpuGen="Tesla"
         gpuDriver="nvidia-340xx-dkms"
         ;;
-    *"G7"* | *"Curie"*)
+    *"C51"* | *"C61"* | *"C67"* | *"C68"* | *"C73"* | *"G70"* | *"G71"* | *"G72"* | *"G73"* | *"NV40"* | *"NV41"* | *"NV42"* | *"NV43"* | *"NV44"* | *"NV45"* | *"NV48"* | *"RSX"*)
         gpuGen="Curie"
+        gpuDriver="unsupported"
+        ;;
+    *"NV30"* | *"NV31"* | *"NV34"* | *"NV35"* | *"NV36"* | *"NV37"* | *"NV38"* | *"NV39"*)
+        gpuGen="Rankine"
+        gpuDriver="unsupported"
+        ;;
+    *"NV20"* | *"NV25"* | *"NV28"* | *"NV2A"*)
+        gpuGen="Kelvin"
+        gpuDriver="unsupported"
+        ;;
+    *"Crush1"* | *"NV10"* | *"NV11"* | *"NV15"* | *"NV17"* | *"NV18"*)
+        gpuGen="Celsius"
+        gpuDriver="unsupported"
+        ;;
+    *"NV4"* | *"NV5"*)
+        gpuGen="Fahrenheit"
         gpuDriver="unsupported"
         ;;
     *)
