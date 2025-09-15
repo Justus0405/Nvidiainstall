@@ -33,23 +33,23 @@ The Ultimate NVIDIA Toolbox in one bash script.
 
 | Codename         | Release   | Support / Recommended Driver   |
 | ---------------- | --------- | ------------------------------ |
-| **Fahrenheit**   | 1998-2000 | Unsupported                    |
-| **Celsius**      | 1999-2005 | Unsupported                    |
-| **Kelvin**       | 2001-2003 | Unsupported                    |
-| **Rankine**      | 2003-2005 | Unsupported                    |
-| **Curie**        | 2003-2013 | Unsupported                    |
-| **Tesla**        | 2006-2013 | nvidia-340xx-dkms              |
-| **VLIW Vec4**    | 2010-2013 | nvidia-390xx-dkms              |
-| **Fermi**        | 2010-2016 | nvidia-390xx-dkms              |
-| **Kepler**       | 2012-2018 | nvidia-470xx-dkms              |
-| **Maxwell**      | 2014-2019 | nvidia-dkms                    |
-| **Pascal**       | 2016-2021 | nvidia-dkms                    |
-| **Volta**        | 2017-2020 | nvidia-dkms                    |
-| **Turing**       | 2018-2022 | nvidia-dkms / nvidia-open-dkms |
-| **Ampere**       | 2020-2025 | nvidia-dkms / nvidia-open-dkms |
-| **Ada Lovelace** | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
-| **Hopper**       | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
 | **Blackwell**    | 2024-2025 | nvidia-dkms / nvidia-open-dkms |
+| **Hopper**       | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
+| **Ada Lovelace** | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
+| **Ampere**       | 2020-2025 | nvidia-dkms / nvidia-open-dkms |
+| **Turing**       | 2018-2022 | nvidia-dkms / nvidia-open-dkms |
+| **Volta**        | 2017-2020 | nvidia-dkms                    |
+| **Pascal**       | 2016-2021 | nvidia-dkms                    |
+| **Maxwell**      | 2014-2019 | nvidia-dkms                    |
+| **Kepler**       | 2012-2018 | nvidia-470xx-dkms              |
+| **Fermi**        | 2010-2016 | nvidia-390xx-dkms              |
+| **VLIW Vec4**    | 2010-2013 | nvidia-390xx-dkms              |
+| **Tesla**        | 2006-2013 | nvidia-340xx-dkms              |
+| **Curie**        | 2003-2013 | Unsupported                    |
+| **Rankine**      | 2003-2005 | Unsupported                    |
+| **Kelvin**       | 2001-2003 | Unsupported                    |
+| **Celsius**      | 1999-2005 | Unsupported                    |
+| **Fahrenheit**   | 1998-2000 | Unsupported                    |
 
 # Installation
 
