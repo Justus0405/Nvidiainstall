@@ -177,7 +177,7 @@ checkNvidia() {
         gpuGen="VLIW Vec4"
         gpuDriver="nvidia-390xx-dkms"
         ;;
-    *"C77"* | *"C78"* | *"C79"* | *"C7A"* | *"G80"* | *"G84"* | *"G86"* | *"G92"* | *"G94"* | *"G96"* | *"G98"* | *"ION"*)
+    *"C77"* | *"C78"* | *"C79"* | *"C7A"* | *"G80"* | *"G84"* | *"G86"* | *"G92"* | *"G94"* | *"G96"* | *"G98"* | *"ION"* | *"C87"* | *"C89"* | *"GT20"* | *"GT21"*)
         gpuGen="Tesla"
         gpuDriver="nvidia-340xx-dkms"
         ;;
