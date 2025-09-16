@@ -138,23 +138,23 @@ checkNvidia() {
     case "${gpuName}" in
     *"GB10"* | *"GB20"*)
         gpuGen="Blackwell"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="manual"
         ;;
     *"GH10"*)
         gpuGen="Hopper"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="manual"
         ;;
     *"AD10"*)
         gpuGen="Ada Lovelace"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="manual"
         ;;
     *"GA10"*)
         gpuGen="Ampere"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="manual"
         ;;
     *"TU10"* | *"TU11"*)
         gpuGen="Turing"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="manual"
         ;;
     *"GV10"*)
         gpuGen="Volta"
@@ -206,7 +206,7 @@ checkNvidia() {
         ;;
     *)
         gpuGen="Unknown"
-        gpuDriver="manual"
+        gpuDriver="unidentified"
         ;;
     esac
 
@@ -214,8 +214,12 @@ checkNvidia() {
         logMessage "error" "${gpuGen} is not supported anymore."
     fi
 
-    if [[ ${gpuDriver} == "manual" ]]; then
+    if [[ ${gpuDriver} == "unidentified" ]]; then
         chooseGpuDriver
+    fi
+
+    if [[ ${gpuDriver} == "manual" ]]; then
+        chooseProprietaryOrOpen
     fi
 
     if [[ -z ${gpuName} ]]; then
@@ -228,7 +232,12 @@ checkInstalledDriver() {
     # inside a variable in order for the uninstallation step to know which packages to remove.
     # Is also used in showDeviceInformation().
 
+    legacyDriver=$(pacman -Qq | grep -E '^nvidia$')
     installedDriver=$(pacman -Q | grep -E 'nvidia-(dkms|470xx-dkms|390xx-dkms|340xx-dkms)')
+
+    if [[ -n ${legacyDriver} ]]; then
+        installedDriver="legacy"
+    fi
 
     if [[ -z ${installedDriver} ]]; then
         installedDriver="none"
@@ -249,31 +258,72 @@ chooseGpuDriver() {
     echo -e "\t│ [!] Curie and older are not supported anymore!   │"
     echo -e "\t├──────────────────────────────────────────────────┤"
     echo -e "\t│                                                  │"
-    echo -e "\t│ [1] nvidia-dkms         [Ada Lovelace and newer] │"
-    echo -e "\t│ [2] nvidia-470xx-dkms                   [Kepler] │"
-    echo -e "\t│ [3] nvidia-390xx-dkms                    [Fermi] │"
-    echo -e "\t│ [4] nvidia-340xx-dkms                    [Tesla] │"
+    echo -e "\t│ [1] nvidia-open-dkms          [Turing and newer] │"
+    echo -e "\t│ [2] nvidia-dkms              [Maxwell and newer] │"
+    echo -e "\t│ [3] nvidia-470xx-dkms                   [Kepler] │"
+    echo -e "\t│ [4] nvidia-390xx-dkms                    [Fermi] │"
+    echo -e "\t│ [5] nvidia-340xx-dkms                    [Tesla] │"
     echo -e "\t│                                                  │"
     echo -e "\t├──────────────────────────────────────────────────┤"
     echo -e "\t│ [0] Quit                                         │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
-    echo -e "\t${green}Choose a menu option using your keyboard [1,2,3,4,0]${reset}"
+    echo -e "\t${green}Choose a menu option using your keyboard [1,2,...,0]${reset}"
 
     read -rsn1 option
 
     case "${option}" in
     "1")
-        gpuDriver="nvidia-dkms"
+        gpuDriver="nvidia-open-dkms"
         ;;
     "2")
-        gpuDriver="nvidia-470xx-dkms"
+        gpuDriver="nvidia-dkms"
         ;;
     "3")
-        gpuDriver="nvidia-390xx-dkms"
+        gpuDriver="nvidia-470xx-dkms"
         ;;
     "4")
+        gpuDriver="nvidia-390xx-dkms"
+        ;;
+    "5")
         gpuDriver="nvidia-340xx-dkms"
+        ;;
+    "0")
+        exitScript "Quit."
+        ;;
+    esac
+}
+
+chooseProprietaryOrOpen() {
+    # When the detected gpu supports either the nvidia-dkms or nvidia-open-dkms package.
+    # Let the user choose
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     Your GPU supports both proprietary   │"
+    echo -e "\t│  /  #  \    and open-source driver packages.     │"
+    echo -e "\t│ /_______\   Which one do you want to install?    │"
+    echo -e "\t│                                                  │"
+    echo -e "\t├──────────────────────────────────────────────────┤"
+    echo -e "\t│                                                  │"
+    echo -e "\t│ [1] nvidia-open-dkms                             │"
+    echo -e "\t│ [2] nvidia-dkms                                  │"
+    echo -e "\t│                                                  │"
+    echo -e "\t├──────────────────────────────────────────────────┤"
+    echo -e "\t│ [0] Quit                                         │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
+    echo -e ""
+    echo -e "\t${green}Choose a menu option using your keyboard [1,2,...,0]${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    "1")
+        gpuDriver="nvidia-open-dkms"
+        ;;
+    "2")
+        gpuDriver="nvidia-dkms"
         ;;
     "0")
         exitScript "Quit."
@@ -305,19 +355,23 @@ showMenu() {
     echo -e "\t│ [1] Install                                      │"
     echo -e "\t│ [2] Uninstall                                    │"
     echo -e "\t│ [3] Device Information                           │"
-    echo -e "\t│ [4] About                                        │"
+    echo -e "\t│ [4] About Nvidiainstall                          │"
     echo -e "\t│                                                  │"
     echo -e "\t├──────────────────────────────────────────────────┤"
     echo -e "\t│ [0] Quit                                         │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
-    echo -e "\t${green}Choose a menu option using your keyboard [1,2,3,4,0]${reset}"
+    echo -e "\t${green}Choose a menu option using your keyboard [1,2,...,0]${reset}"
 
     read -rsn1 option
 
     case "${option}" in
     "1")
-        confirmInstallation
+        if [[ -n ${installedDriver} ]]; then
+            showDriverInstalled
+        else
+            confirmInstallation
+        fi
         ;;
     "2")
         if [[ ${installedDriver} == "none" ]]; then
@@ -350,9 +404,9 @@ showDeviceInformation() {
     echo -e ""
     echo -e "\tDetected GPU: ${gpuName}"
     echo -e "\tGeneration: ${gpuGen}"
-    echo -e "\tRecommended driver: ${gpuDriver}"
+    echo -e "\tInstalled Driver: ${installedDriver}"
     echo -e ""
-    echo -e "\tInstalled driver: ${installedDriver}"
+    echo -e "\tSelected Driver: ${gpuDriver}"
     echo -e ""
     echo -e "\t${green}Press any button to return${reset}"
 
@@ -394,7 +448,29 @@ showAbout() {
     esac
 }
 
+showDriverInstalled() {
+    # Screen for when the user wants to install nvidia drivers but others are found.
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     You already have other NVIDIA dkms   │"
+    echo -e "\t│  /  #  \    packages Installed!                  │"
+    echo -e "\t│ /_______\                                        │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
+    echo -e ""
+    echo -e "\t${green}Press any button to return${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    *) ;;
+
+    esac
+}
+
 showNoDriverInstalled() {
+    # Screen for when the user wants to uninstall nvidia drivers but none could be found.
 
     clear
     echo -e "\t┌──────────────────────────────────────────────────┐"
@@ -428,10 +504,10 @@ confirmInstallation() {
     echo -e "\t│ [!] Proceed with caution!                        │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
-    read -rp "Do you want to proceed? (y/N): " confirm
+    read -rp "Do you want to install ${gpuDriver}? (y/N): " confirm
     case "${confirm}" in
     [yY][eE][sS] | [yY])
-        echo -e "${green}Proceeding with installation...${reset}"
+        echo -e "${green}Installing ${gpuDriver}...${reset}"
         installationSteps
         ;;
     *)
@@ -513,6 +589,9 @@ installNvidiaPackages() {
     logMessage "info" "Installing ${gpuDriver} and dependencies..."
 
     case "${gpuDriver}" in
+    "nvidia-open-dkms")
+        sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        ;;
     "nvidia-dkms")
         sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
@@ -720,6 +799,13 @@ removeNvidiaPackages() {
 
     # Substring match because of package versions by checkInstalledDriver().
     case "${installedDriver}" in
+    # Exeption for the non-dkms nvidia package
+    "nvidia")
+        sudo pacman -R --noconfirm nvidia nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    *"nvidia-open-dkms"*)
+        sudo pacman -R --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
     *"nvidia-dkms"*)
         sudo pacman -R --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
