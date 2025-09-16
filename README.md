@@ -13,7 +13,7 @@
     <!-- Discord Badge -->
     <a href="https://discord.justus0405.com/"><img src="https://img.shields.io/discord/1370519315400495234?logo=Discord&colorA=1e1e2e&colorB=a6e3a1&style=for-the-badge"></a>
     <!-- Version Badge -->
-    <a href="https://github.com/Justus0405/Nvidiainstall/blob/main/nvidiainstall.sh"><img src="https://img.shields.io/badge/Version-2.1-blue?colorA=1e1e2e&colorB=cdd6f4&style=for-the-badge"></a>
+    <a href="https://github.com/Justus0405/Nvidiainstall/blob/main/nvidiainstall.sh"><img src="https://img.shields.io/badge/Version-2.2-blue?colorA=1e1e2e&colorB=cdd6f4&style=for-the-badge"></a>
 </p>
 
 <p align="left">

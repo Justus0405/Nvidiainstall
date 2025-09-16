@@ -6,7 +6,7 @@
 # Date: 12.10.2024
 # License: MIT
 
-export scriptVersion="2.1"
+export scriptVersion="2.2"
 
 ### COLOR CODES ###
 export black="\e[1;30m"
@@ -125,9 +125,6 @@ checkNvidia() {
     # Detect NVIDIA GPU and decide driver package.
     # Index: https://www.techpowerup.com/gpu-specs/
 
-    # TODO: Add open source driver support.
-    # TODO: Verify NVIDIA Databse, 2x ion across 2x generations prüfen!
-
     # Default values.
     gpuGen="Unknown"
     gpuDriver="Unknown"
@@ -181,6 +178,7 @@ checkNvidia() {
         gpuDriver="nvidia-390xx-dkms"
         ;;
     *"C77"* | *"C78"* | *"C79"* | *"C7A"* | *"G80"* | *"G84"* | *"G86"* | *"G92"* | *"G94"* | *"G96"* | *"G98"* | *"ION"* | *"C87"* | *"C89"* | *"GT20"* | *"GT21"*)
+        # C7A-ION, NVIDIA ION
         gpuGen="Tesla"
         gpuDriver="nvidia-340xx-dkms"
         ;;
