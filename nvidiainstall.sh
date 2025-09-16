@@ -106,6 +106,7 @@ aurHelperInstall() {
     local packages="$1"
     local targetUser="${SUDO_USER:-$(whoami)}"
 
+    # shellcheck disable=SC2086
     sudo -u "${targetUser}" yay -S --needed --noconfirm ${packages}
 }
 
@@ -116,6 +117,7 @@ aurHelperUninstall() {
     local packages="$1"
     local targetUser="${SUDO_USER:-$(whoami)}"
 
+    # shellcheck disable=SC2086
     sudo -u "${targetUser}" yay -R --noconfirm ${packages}
 }
 
@@ -123,7 +125,8 @@ checkNvidia() {
     # Detect NVIDIA GPU and decide driver package.
     # Index: https://www.techpowerup.com/gpu-specs/
 
-    # TODO: Add open source driver support
+    # TODO: Add open source driver support.
+    # TODO: Verify NVIDIA Databse, 2x ion across 2x generations prüfen!
 
     # Default values.
     gpuGen="Unknown"
@@ -208,7 +211,7 @@ checkNvidia() {
     esac
 
     if [[ ${gpuDriver} == "unsupported" ]]; then
-        logMessage "error" "Curie and older are not supported anymore :/"
+        logMessage "error" "${gpuGen} is not supported anymore."
     fi
 
     if [[ ${gpuDriver} == "manual" ]]; then
@@ -217,6 +220,18 @@ checkNvidia() {
 
     if [[ -z ${gpuName} ]]; then
         gpuName="Unkown"
+    fi
+}
+
+checkInstalledDriver() {
+    # This function checks if any nvidia drivers are installed and serves them
+    # inside a variable in order for the uninstallation step to know which packages to remove.
+    # Is also used in showDeviceInformation().
+
+    installedDriver=$(pacman -Q | grep -E 'nvidia-(dkms|470xx-dkms|390xx-dkms|340xx-dkms)')
+
+    if [[ -z ${installedDriver} ]]; then
+        installedDriver="none"
     fi
 }
 
@@ -305,7 +320,11 @@ showMenu() {
         confirmInstallation
         ;;
     "2")
-        confirmUninstallation
+        if [[ ${installedDriver} == "none" ]]; then
+            showNoDriverInstalled
+        else
+            confirmUninstallation
+        fi
         ;;
     "3")
         showDeviceInformation
@@ -332,6 +351,8 @@ showDeviceInformation() {
     echo -e "\tDetected GPU: ${gpuName}"
     echo -e "\tGeneration: ${gpuGen}"
     echo -e "\tRecommended driver: ${gpuDriver}"
+    echo -e ""
+    echo -e "\tInstalled driver: ${installedDriver}"
     echo -e ""
     echo -e "\t${green}Press any button to return${reset}"
 
@@ -362,6 +383,26 @@ showAbout() {
         echo -e "\t\t\e[0;35m${contributors}\e[m"
     done
 
+    echo -e ""
+    echo -e "\t${green}Press any button to return${reset}"
+
+    read -rsn1 option
+
+    case "${option}" in
+    *) ;;
+
+    esac
+}
+
+showNoDriverInstalled() {
+
+    clear
+    echo -e "\t┌──────────────────────────────────────────────────┐"
+    echo -e "\t│    / \                                           │"
+    echo -e "\t│   / | \     We could not find any installed      │"
+    echo -e "\t│  /  #  \    NVIDIA dkms packages!                │"
+    echo -e "\t│ /_______\                                        │"
+    echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
     echo -e "\t${green}Press any button to return${reset}"
 
@@ -634,10 +675,10 @@ confirmUninstallation() {
     echo -e "\t│ [!] Proceed with caution!                        │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
-    read -rp "Do you want to proceed? (y/N): " confirm
+    read -rp "Do you want to uninstall ${installedDriver}? (y/N): " confirm
     case "${confirm}" in
     [yY][eE][sS] | [yY])
-        echo -e "${green}Proceeding with uninstallation...${reset}"
+        echo -e "${green}Uninstalling ${installedDriver}...${reset}"
         uninstallationSteps
         ;;
     *)
@@ -675,22 +716,22 @@ uninstallationSteps() {
 removeNvidiaPackages() {
     # Uninstall the nvidia drivers, configs and unused dependencies.
 
-    logMessage "info" "Identified Generation: ${gpuGen}"
-    logMessage "info" "Uninstalling ${gpuDriver} and dependencies..."
+    logMessage "info" "Uninstalling ${installedDriver} and dependencies..."
 
-    case "${gpuDriver}" in
-    "nvidia-dkms")
+    # Substring match because of package versions by checkInstalledDriver().
+    case "${installedDriver}" in
+    *"nvidia-dkms"*)
         sudo pacman -R --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
-    "nvidia-470xx-dkms")
+    *"nvidia-470xx-dkms"*)
         checkAurHelper
         aurHelperUninstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
-    "nvidia-390xx-dkms")
+    *"nvidia-390xx-dkms"*)
         checkAurHelper
         aurHelperUninstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
-    "nvidia-340xx-dkms")
+    *"nvidia-340xx-dkms"*)
         checkAurHelper
         aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
@@ -772,5 +813,8 @@ checkSudo
 # Step 3: Identify NVIDIA card, if that fails prompt the user to select a driver
 checkNvidia
 
-# Step 4: Show main selection menu
+# Step 4: Detect if a driver is already installed, needed for uninstallation handling.
+checkInstalledDriver
+
+# Step 5: Show main selection menu
 showMenu
