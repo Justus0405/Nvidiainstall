@@ -365,10 +365,10 @@ showMenu() {
 
     case "${option}" in
     "1")
-        if [[ -n ${installedDriver} ]]; then
-            showDriverInstalled
-        else
+        if [[ ${installedDriver} == "none" ]]; then
             confirmInstallation
+        else
+            showDriverInstalled
         fi
         ;;
     "2")
