@@ -457,6 +457,8 @@ showDriverInstalled() {
     echo -e "\t│ /_______\                                        │"
     echo -e "\t└──────────────────────────────────────────────────┘"
     echo -e ""
+    echo -e "\tInstalled Package: ${installedDriver}"
+    echo -e ""
     echo -e "\t${green}Press any button to return${reset}"
 
     read -rsn1 option
