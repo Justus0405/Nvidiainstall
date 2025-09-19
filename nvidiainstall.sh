@@ -76,7 +76,6 @@ checkAurHelper() {
 
     if command -v yay >/dev/null 2>&1; then
         logMessage "info" "Yay is installed."
-        export aurHelper="yay"
     else
         logMessage "info" "Yay is not installed."
         installAurHelper
