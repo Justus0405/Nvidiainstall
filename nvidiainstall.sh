@@ -230,7 +230,7 @@ checkInstalledDriver() {
     # Is also used in showDeviceInformation().
 
     legacyDriver=$(pacman -Qq | grep -E '^nvidia$')
-    installedDriver=$(pacman -Qq | grep -E 'nvidia-(dkms|470xx-dkms|390xx-dkms|340xx-dkms)')
+    installedDriver=$(pacman -Qq | grep -E 'nvidia-(dkms|open-dkms|470xx-dkms|390xx-dkms|340xx-dkms)')
 
     if [[ -n ${legacyDriver} ]]; then
         installedDriver="nvidia"
