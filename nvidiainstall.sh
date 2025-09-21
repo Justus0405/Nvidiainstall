@@ -615,6 +615,7 @@ installNvidiaPackages() {
         checkAurHelper
         aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
+        # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
         ;;
     *)
         logMessage "error" "No package provided for installation."
@@ -802,31 +803,34 @@ uninstallationSteps() {
 }
 
 removeNvidiaPackages() {
-    # Uninstall the nvidia drivers, configs and unused dependencies.
+    # Uninstalls the nvidia driver.
+    # Only removes the main nvidia package because
+    # if a user doesnt have any of the other ones the uninstallation would fail...
+    # Compatibility against usability. :/
 
     logMessage "info" "Uninstalling ${installedDriver} and dependencies..."
 
     case "${installedDriver}" in
     "nvidia")
-        sudo pacman -R --noconfirm nvidia nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
+        sudo pacman -R --noconfirm nvidia || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-open-dkms")
-        sudo pacman -R --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
+        sudo pacman -R --noconfirm nvidia-open-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-dkms")
-        sudo pacman -R --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings lib32-nvidia-utils lib32-opencl-nvidia || logMessage "error" "Could not uninstall NVIDIA packages."
+        sudo pacman -R --noconfirm nvidia-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-470xx-dkms")
         checkAurHelper
-        aurHelperUninstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx" || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-470xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-390xx-dkms")
         checkAurHelper
-        aurHelperUninstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx" || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-390xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
-        aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx" || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-340xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     *)
         logMessage "error" "No package provided for uninstallation."
