@@ -392,6 +392,9 @@ showMenu() {
     "0")
         exitScript "Quit."
         ;;
+    *)
+        showMenu
+        ;;
     esac
 
     # Loop back to menu after an option is handled.
@@ -613,6 +616,9 @@ installNvidiaPackages() {
         aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
         ;;
+    *)
+        logMessage "error" "No package provided for installation."
+        ;;
     esac
 
     logMessage "info" "Installed NVIDIA packages and dependencies."
@@ -821,6 +827,9 @@ removeNvidiaPackages() {
     "nvidia-340xx-dkms")
         checkAurHelper
         aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx" || logMessage "error" "Could not uninstall NVIDIA packages."
+        ;;
+    *)
+        logMessage "error" "No package provided for uninstallation."
         ;;
     esac
 
