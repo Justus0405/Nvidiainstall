@@ -560,7 +560,7 @@ updateSystem() {
     # Updating system because why not?
 
     logMessage "info" "Updating System..."
-    sudo pacman -Syyu || logMessage "error" "Could not update system, are you connected to the internet?"
+    sudo pacman -Syyu --noconfirm || logMessage "error" "Could not update system, are you connected to the internet?"
     logMessage "info" "Updated System."
 }
 
