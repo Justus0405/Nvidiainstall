@@ -622,7 +622,7 @@ installNvidiaPackages() {
         ;;
     esac
 
-    logMessage "info" "Installed NVIDIA packages and dependencies."
+    logMessage "info" "Successfully installed ${gpuDriver} and dependencies."
 }
 
 configureMkinitcpio() {
@@ -808,7 +808,7 @@ removeNvidiaPackages() {
     # if a user doesnt have any of the other ones the uninstallation would fail...
     # Compatibility against usability. :/
 
-    logMessage "info" "Uninstalling ${installedDriver} and dependencies..."
+    logMessage "info" "Uninstalling ${installedDriver}..."
 
     case "${installedDriver}" in
     "nvidia")
@@ -837,7 +837,7 @@ removeNvidiaPackages() {
         ;;
     esac
 
-    logMessage "info" "Uninstalled NVIDIA packages and dependencies."
+    logMessage "info" "Successfully uninstalled ${installedDriver}."
 }
 
 removeMkinitcpio() {
