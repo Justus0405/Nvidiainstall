@@ -6,7 +6,7 @@
 # Date: 12.10.2024
 # License: MIT
 
-export scriptVersion="2.2"
+export scriptVersion="2.3"
 
 ### COLOR CODES ###
 export black="\e[1;30m"
