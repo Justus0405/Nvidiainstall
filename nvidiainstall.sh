@@ -288,6 +288,9 @@ chooseGpuDriver() {
     "0")
         exitScript "Quit."
         ;;
+    *)
+        chooseGpuDriver
+        ;;
     esac
 }
 
@@ -324,6 +327,9 @@ chooseProprietaryOrOpen() {
         ;;
     "0")
         exitScript "Quit."
+        ;;
+    *)
+        chooseProprietaryOrOpen
         ;;
     esac
 }
