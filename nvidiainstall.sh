@@ -605,9 +605,7 @@ installNvidiaPackages() {
     "nvidia-340xx-dkms")
         checkAurHelper
         aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
-        # This is stupid, but without it nvidia-340xx-settings fails to install...
-        sudo rm -rf "/usr/local/share/man/"
-        aurHelperInstall "nvidia-340xx-settings"
+        # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
         ;;
     esac
 
@@ -816,7 +814,7 @@ removeNvidiaPackages() {
         ;;
     "nvidia-340xx-dkms")
         checkAurHelper
-        aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx nvidia-340xx-settings lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx" || logMessage "error" "Could not uninstall NVIDIA packages."
+        aurHelperUninstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx" || logMessage "error" "Could not uninstall NVIDIA packages."
         ;;
     esac
 
