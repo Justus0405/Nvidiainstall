@@ -6,7 +6,8 @@
 # Date: 12.10.2024
 # License: MIT
 
-export scriptVersion="2.3"
+export scriptVersion="2.4"
+export legacyMode="false"
 
 ### COLOR CODES ###
 export black="\e[1;30m"
@@ -57,6 +58,26 @@ logMessage() {
     esac
 }
 
+getArguments() {
+    case "$1" in
+    "-l" | "--legacy")
+        export legacyMode="true"
+        ;;
+    "-h" | "--help")
+        printHelp
+        ;;
+    "-v" | "--version")
+        printVersion
+        ;;
+    "")
+        return
+        ;;
+    *)
+        return
+        ;;
+    esac
+}
+
 checkSudo() {
     # Checks EUID to see if the script is running as sudo.
 
@@ -72,6 +93,7 @@ checkSudo() {
 }
 
 checkAurHelper() {
+    # WARNING! DEPRICATED SINCE v2.4
     # Checking if yay is installed.
 
     if command -v yay >/dev/null 2>&1; then
@@ -83,6 +105,7 @@ checkAurHelper() {
 }
 
 installAurHelper() {
+    # WARNING! DEPRICATED SINCE v2.4
     # Installing yay as aur helper for the executing user.
     # Makepkg crashes if its not running as a non-root user
 
@@ -99,6 +122,7 @@ EOF
 }
 
 aurHelperInstall() {
+    # WARNING! DEPRICATED SINCE v2.4
     # Install with yay using a non-root user.
     # This is because yay complains when running as root.
 
@@ -110,6 +134,7 @@ aurHelperInstall() {
 }
 
 aurHelperUninstall() {
+    # WARNING! DEPRICATED SINCE v2.4
     # Uninstall with yay using a non-root user.
     # This is because yay complains when running as root.
 
@@ -118,6 +143,38 @@ aurHelperUninstall() {
 
     # shellcheck disable=SC2086
     sudo -u "${targetUser}" yay -R --noconfirm ${packages}
+}
+
+checkChaoticAur() {
+    # Checking if the chaotic aur is installed and configured
+
+    if [[ -f "/etc/pacman.d/chaotic-mirrorlist" ]]; then
+        logMessage "info" "Chaotic AUR is installed."
+    else
+        logMessage "warning" "Chaotic AUR is not installed."
+        installChaoticAUR
+    fi
+}
+
+installChaoticAUR() {
+    # Install the chaotic aur mirrorlist
+
+    logMessage "info" "Installing the Chaotic AUR..."
+
+    sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+    sudo pacman-key --lsign-key 3056513887B78AEB
+
+    sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+    sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+
+    sudo tee -a "/etc/pacman.conf" >/dev/null <<EOF
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+
+    sudo pacman -Syy
+
+    logMessage "Successfully installed the Chaotic AUR."
 }
 
 checkNvidia() {
@@ -413,6 +470,7 @@ showDeviceInformation() {
     echo -e "\tInstalled Driver: ${installedDriver}"
     echo -e ""
     echo -e "\tSelected Driver: ${gpuDriver}"
+    echo -e "\tLegacy Mode: ${legacyMode}"
     echo -e ""
     echo -e "\t${green}Press any button to return${reset}"
 
@@ -604,16 +662,31 @@ installNvidiaPackages() {
         sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         ;;
     "nvidia-470xx-dkms")
-        checkAurHelper
-        aurHelperInstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperInstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        else
+            checkChaoticAur
+            sudo pacman -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+        fi
         ;;
     "nvidia-390xx-dkms")
-        checkAurHelper
-        aurHelperInstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperInstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        else
+            checkChaoticAur
+            sudo pacman -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+        fi
         ;;
     "nvidia-340xx-dkms")
-        checkAurHelper
-        aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        else
+            checkChaoticAur
+            sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+        fi
         # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
         # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
         ;;
@@ -821,16 +894,31 @@ removeNvidiaPackages() {
         sudo pacman -R --noconfirm nvidia-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
         ;;
     "nvidia-470xx-dkms")
-        checkAurHelper
-        aurHelperUninstall "nvidia-470xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperUninstall "nvidia-470xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        else
+            checkChaoticAur
+            sudo pacman -R --noconfirm nvidia-470xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+        fi
         ;;
     "nvidia-390xx-dkms")
-        checkAurHelper
-        aurHelperUninstall "nvidia-390xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperUninstall "nvidia-390xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        else
+            checkChaoticAur
+            sudo pacman -R --noconfirm nvidia-390xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+        fi
         ;;
     "nvidia-340xx-dkms")
-        checkAurHelper
-        aurHelperUninstall "nvidia-340xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperUninstall "nvidia-340xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+        else
+            checkChaoticAur
+            sudo pacman -R --noconfirm nvidia-340xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+        fi
         ;;
     *)
         logMessage "error" "No package provided for uninstallation."
@@ -902,19 +990,39 @@ exitScript() {
     exit 0
 }
 
+printHelp() {
+    echo -e "usage: $(basename "$0") [...]"
+    echo -e "arguments:"
+    echo -e "\t -l | --legacy"
+    echo -e "\t -h | --help"
+    echo -e "\t -v | --version"
+    echo -e ""
+    exit 0
+}
+
+printVersion() {
+    echo -e "               $(basename "$0") v${scriptVersion} - GNU bash, version 5.3"
+    echo -e "               Copyright (C) 2025-present Justus0405"
+    echo -e ""
+    exit 0
+}
+
 ### PROGRAM START ###
 
 # Step 1: Set up trap for SIGINT (CTRL+C)
 trap 'exitScript "Aborted!"' SIGINT
 
-# Step 2: Check if running as sudo
+# Step 2: Get the launch arguments
+getArguments "$@"
+
+# Step 3: Check if running as sudo
 checkSudo
 
-# Step 3: Identify NVIDIA card, if that fails prompt the user to select a driver
+# Step 4: Identify NVIDIA card, if that fails prompt the user to select a driver
 checkNvidia
 
-# Step 4: Detect if a driver is already installed, needed for uninstallation handling.
+# Step 5: Detect if a driver is already installed, needed for uninstallation handling.
 checkInstalledDriver
 
-# Step 5: Show main selection menu
+# Step 6: Show main selection menu
 showMenu
