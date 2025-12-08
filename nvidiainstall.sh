@@ -682,12 +682,12 @@ installNvidiaPackages() {
     "nvidia-340xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+            aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
         else
             # NOTE:
             # Chaotic aur does not offer lib32-nvidia-340xx-utils and lib32-opencl-nvidia-340xx
             checkChaoticAur
-            sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+            sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
         fi
         # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
         # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
