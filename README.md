@@ -56,7 +56,7 @@ The Ultimate NVIDIA Toolbox in one bash script.
 1. Clone the repository:
 
 ```shell
-git clone https://github.com/Justus0405/Nvidiainstall.git
+git clone --depth 1 https://github.com/Justus0405/Nvidiainstall.git
 ```
 
 2. Navigate to the directory:
