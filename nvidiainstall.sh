@@ -6,7 +6,7 @@
 # Date: 12.10.2024
 # License: MIT
 
-export scriptVersion="2.4"
+export scriptVersion="2.5"
 export legacyMode="false"
 
 ### COLOR CODES ###
@@ -191,35 +191,35 @@ checkNvidia() {
     case "${gpuName}" in
     *"GB10"* | *"GB20"*)
         gpuGen="Blackwell"
-        gpuDriver="manual"
+        gpuDriver="nvidia-open-dkms"
         ;;
     *"GH10"*)
         gpuGen="Hopper"
-        gpuDriver="manual"
+        gpuDriver="nvidia-open-dkms"
         ;;
     *"AD10"*)
         gpuGen="Ada Lovelace"
-        gpuDriver="manual"
+        gpuDriver="nvidia-open-dkms"
         ;;
     *"GA10"*)
         gpuGen="Ampere"
-        gpuDriver="manual"
+        gpuDriver="nvidia-open-dkms"
         ;;
     *"TU10"* | *"TU11"*)
         gpuGen="Turing"
-        gpuDriver="manual"
+        gpuDriver="nvidia-open-dkms"
         ;;
     *"GV10"*)
         gpuGen="Volta"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="nvidia-580xx-dkms"
         ;;
     *"GP10"*)
         gpuGen="Pascal"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="nvidia-580xx-dkms"
         ;;
     *"GM10"* | *"GM20"*)
         gpuGen="Maxwell"
-        gpuDriver="nvidia-dkms"
+        gpuDriver="nvidia-580xx-dkms"
         ;;
     *"EXK107"* | *"GK10"* | *"GK11"* | *"GK18"* | *"GK20"* | *"GK21"*)
         gpuGen="Kepler"
@@ -272,10 +272,6 @@ checkNvidia() {
         chooseGpuDriver
     fi
 
-    if [[ ${gpuDriver} == "manual" ]]; then
-        chooseProprietaryOrOpen
-    fi
-
     if [[ -z ${gpuName} ]]; then
         gpuName="Unkown"
     fi
@@ -313,7 +309,7 @@ chooseGpuDriver() {
     echo -e "\t├──────────────────────────────────────────────────┤"
     echo -e "\t│                                                  │"
     echo -e "\t│ [1] nvidia-open-dkms          [Turing and newer] │"
-    echo -e "\t│ [2] nvidia-dkms              [Maxwell and newer] │"
+    echo -e "\t│ [2] nvidia-580xx-dkms   [Maxwell, Pascal, Volta] │"
     echo -e "\t│ [3] nvidia-470xx-dkms                   [Kepler] │"
     echo -e "\t│ [4] nvidia-390xx-dkms                    [Fermi] │"
     echo -e "\t│ [5] nvidia-340xx-dkms                    [Tesla] │"
@@ -331,7 +327,7 @@ chooseGpuDriver() {
         gpuDriver="nvidia-open-dkms"
         ;;
     "2")
-        gpuDriver="nvidia-dkms"
+        gpuDriver="nvidia-580xx-dkms"
         ;;
     "3")
         gpuDriver="nvidia-470xx-dkms"
@@ -347,46 +343,6 @@ chooseGpuDriver() {
         ;;
     *)
         chooseGpuDriver
-        ;;
-    esac
-}
-
-chooseProprietaryOrOpen() {
-    # When the detected gpu supports either the nvidia-dkms or nvidia-open-dkms package.
-    # Let the user choose
-
-    clear
-    echo -e "\t┌──────────────────────────────────────────────────┐"
-    echo -e "\t│    / \                                           │"
-    echo -e "\t│   / | \     Your GPU supports both proprietary   │"
-    echo -e "\t│  /  #  \    and open-source driver packages.     │"
-    echo -e "\t│ /_______\   Which one do you want to install?    │"
-    echo -e "\t│                                                  │"
-    echo -e "\t├──────────────────────────────────────────────────┤"
-    echo -e "\t│                                                  │"
-    echo -e "\t│ [1] nvidia-open-dkms                             │"
-    echo -e "\t│ [2] nvidia-dkms                                  │"
-    echo -e "\t│                                                  │"
-    echo -e "\t├──────────────────────────────────────────────────┤"
-    echo -e "\t│ [0] Quit                                         │"
-    echo -e "\t└──────────────────────────────────────────────────┘"
-    echo -e ""
-    echo -e "\t${green}Choose a menu option using your keyboard [1,2,...,0]${reset}"
-
-    read -rsn1 option
-
-    case "${option}" in
-    "1")
-        gpuDriver="nvidia-open-dkms"
-        ;;
-    "2")
-        gpuDriver="nvidia-dkms"
-        ;;
-    "0")
-        exitScript "Quit."
-        ;;
-    *)
-        chooseProprietaryOrOpen
         ;;
     esac
 }
@@ -656,38 +612,49 @@ installNvidiaPackages() {
 
     case "${gpuDriver}" in
     "nvidia-open-dkms")
-        sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+        sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland
         ;;
-    "nvidia-dkms")
-        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
-        ;;
-    "nvidia-470xx-dkms")
+    "nvidia-580xx-dkms")
+        # NOTE:
+        # The chaotic aur does not have the nvidia-580xx-settings package yet.
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperInstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+            aurHelperInstall "nvidia-580xx-dkms nvidia-580xx-utils opencl-nvidia-580xx nvidia-580xx-settings libglvnd lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx egl-wayland"
         else
             checkChaoticAur
-            sudo pacman -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+            sudo pacman -S --needed --noconfirm nvidia-580xx-dkms nvidia-580xx-utils opencl-nvidia-580xx libglvnd lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx egl-wayland
+        fi
+        ;;
+    "nvidia-470xx-dkms")
+        # NOTE:
+        # Installing these drivers on a iMac14.2 with a GTX 750M resulted in sddm launching and xorg working but,
+        # plain tty doesnt render anymore.
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperInstall "nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland"
+        else
+            checkChaoticAur
+            sudo pacman -S --needed --noconfirm nvidia-470xx-dkms nvidia-470xx-utils opencl-nvidia-470xx nvidia-470xx-settings libglvnd lib32-nvidia-470xx-utils lib32-opencl-nvidia-470xx egl-wayland
         fi
         ;;
     "nvidia-390xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperInstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+            aurHelperInstall "nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland"
         else
             checkChaoticAur
-            sudo pacman -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+            sudo pacman -S --needed --noconfirm nvidia-390xx-dkms nvidia-390xx-utils opencl-nvidia-390xx nvidia-390xx-settings libglvnd lib32-nvidia-390xx-utils lib32-opencl-nvidia-390xx egl-wayland
         fi
         ;;
     "nvidia-340xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland" || logMessage "error" "Could not install NVIDIA packages. Do you have multilib enabled?"
+            aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland"
         else
             # NOTE:
-            # Chaotic aur does not offer lib32-nvidia-340xx-utils and lib32-opencl-nvidia-340xx
+            # The chaotic aur does not have the lib32-nvidia-340xx-utils and lib32-opencl-nvidia-340xx packages yet.
             checkChaoticAur
-            sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd egl-wayland || logMessage "error" "Could not install NVIDIA packages. Do you have the chaotic aur enabled?"
+            sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd egl-wayland
         fi
         # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
         # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
@@ -887,39 +854,45 @@ removeNvidiaPackages() {
 
     case "${installedDriver}" in
     "nvidia")
-        sudo pacman -R --noconfirm nvidia || logMessage "error" "Could not uninstall ${installedDriver}."
+        sudo pacman -R --noconfirm nvidia
         ;;
     "nvidia-open-dkms")
-        sudo pacman -R --noconfirm nvidia-open-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+        sudo pacman -R --noconfirm nvidia-open-dkms
         ;;
-    "nvidia-dkms")
-        sudo pacman -R --noconfirm nvidia-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+    "nvidia-580xx-dkms")
+        if [[ "${legacyMode}" == "true" ]]; then
+            checkAurHelper
+            aurHelperUninstall "nvidia-580xx-dkms"
+        else
+            checkChaoticAur
+            sudo pacman -R --noconfirm nvidia-580xx-dkms
+        fi
         ;;
     "nvidia-470xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperUninstall "nvidia-470xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+            aurHelperUninstall "nvidia-470xx-dkms"
         else
             checkChaoticAur
-            sudo pacman -R --noconfirm nvidia-470xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+            sudo pacman -R --noconfirm nvidia-470xx-dkms
         fi
         ;;
     "nvidia-390xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperUninstall "nvidia-390xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+            aurHelperUninstall "nvidia-390xx-dkms"
         else
             checkChaoticAur
-            sudo pacman -R --noconfirm nvidia-390xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+            sudo pacman -R --noconfirm nvidia-390xx-dkms
         fi
         ;;
     "nvidia-340xx-dkms")
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
-            aurHelperUninstall "nvidia-340xx-dkms" || logMessage "error" "Could not uninstall ${installedDriver}."
+            aurHelperUninstall "nvidia-340xx-dkms"
         else
             checkChaoticAur
-            sudo pacman -R --noconfirm nvidia-340xx-dkms || logMessage "error" "Could not uninstall ${installedDriver}."
+            sudo pacman -R --noconfirm nvidia-340xx-dkms
         fi
         ;;
     *)

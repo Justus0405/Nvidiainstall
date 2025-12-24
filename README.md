@@ -13,7 +13,7 @@
     <!-- Discord Badge -->
     <a href="https://discord.justus0405.com/"><img src="https://img.shields.io/discord/1370519315400495234?logo=Discord&colorA=1e1e2e&colorB=a6e3a1&style=for-the-badge"></a>
     <!-- Version Badge -->
-    <a href="https://github.com/Justus0405/Nvidiainstall/blob/main/nvidiainstall.sh"><img src="https://img.shields.io/badge/Version-2.4-blue?colorA=1e1e2e&colorB=cdd6f4&style=for-the-badge"></a>
+    <a href="https://github.com/Justus0405/Nvidiainstall/blob/main/nvidiainstall.sh"><img src="https://img.shields.io/badge/Version-2.5-blue?colorA=1e1e2e&colorB=cdd6f4&style=for-the-badge"></a>
 </p>
 
 <p align="left">
@@ -31,25 +31,25 @@ The Ultimate NVIDIA Toolbox in one bash script.
 
 # Hardware Support
 
-| Codename         | Release   | Support / Recommended Driver   |
-| ---------------- | --------- | ------------------------------ |
-| **Blackwell**    | 2024-2025 | nvidia-dkms / nvidia-open-dkms |
-| **Hopper**       | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
-| **Ada Lovelace** | 2022-2024 | nvidia-dkms / nvidia-open-dkms |
-| **Ampere**       | 2020-2025 | nvidia-dkms / nvidia-open-dkms |
-| **Turing**       | 2018-2022 | nvidia-dkms / nvidia-open-dkms |
-| **Volta**        | 2017-2020 | nvidia-dkms                    |
-| **Pascal**       | 2016-2021 | nvidia-dkms                    |
-| **Maxwell**      | 2014-2019 | nvidia-dkms                    |
-| **Kepler**       | 2012-2018 | nvidia-470xx-dkms              |
-| **Fermi**        | 2010-2016 | nvidia-390xx-dkms              |
-| **VLIW Vec4**    | 2010-2013 | nvidia-390xx-dkms              |
-| **Tesla**        | 2006-2013 | nvidia-340xx-dkms              |
-| **Curie**        | 2003-2013 | Unsupported                    |
-| **Rankine**      | 2003-2005 | Unsupported                    |
-| **Kelvin**       | 2001-2003 | Unsupported                    |
-| **Celsius**      | 1999-2005 | Unsupported                    |
-| **Fahrenheit**   | 1998-2000 | Unsupported                    |
+| Codename         | Release   | Support / Recommended Driver |
+| ---------------- | --------- | ---------------------------- |
+| **Blackwell**    | 2024-2025 | nvidia-open-dkms             |
+| **Hopper**       | 2022-2024 | nvidia-open-dkms             |
+| **Ada Lovelace** | 2022-2024 | nvidia-open-dkms             |
+| **Ampere**       | 2020-2025 | nvidia-open-dkms             |
+| **Turing**       | 2018-2022 | nvidia-open-dkms             |
+| **Volta**        | 2017-2020 | nvidia-580xx-dkms            |
+| **Pascal**       | 2016-2021 | nvidia-580xx-dkms            |
+| **Maxwell**      | 2014-2019 | nvidia-580xx-dkms            |
+| **Kepler**       | 2012-2018 | nvidia-470xx-dkms            |
+| **Fermi**        | 2010-2016 | nvidia-390xx-dkms            |
+| **VLIW Vec4**    | 2010-2013 | nvidia-390xx-dkms            |
+| **Tesla**        | 2006-2013 | nvidia-340xx-dkms            |
+| **Curie**        | 2003-2013 | Unsupported                  |
+| **Rankine**      | 2003-2005 | Unsupported                  |
+| **Kelvin**       | 2001-2003 | Unsupported                  |
+| **Celsius**      | 1999-2005 | Unsupported                  |
+| **Fahrenheit**   | 1998-2000 | Unsupported                  |
 
 # Installation
 
