@@ -174,7 +174,7 @@ EOF
 
     sudo pacman -Syy
 
-    logMessage "Successfully installed the Chaotic AUR."
+    logMessage "info" "Successfully installed the Chaotic AUR."
 }
 
 checkNvidia() {
@@ -574,7 +574,7 @@ updateSystem() {
     # Updating system because why not?
 
     logMessage "info" "Updating System..."
-    sudo pacman -Syyu --noconfirm || logMessage "error" "Could not update system, are you connected to the internet?"
+    sudo pacman -Syyu --noconfirm
     logMessage "info" "Updated System."
 }
 
@@ -587,19 +587,19 @@ checkKernelHeaders() {
     if [[ "${kernel}" == *"zen"* ]]; then
         # Zen
         logMessage "info" "Detected Kernel: linux-zen"
-        sudo pacman -S --needed --noconfirm linux-zen-headers || logMessage "error" "Could not install kernel modules."
+        sudo pacman -S --needed --noconfirm linux-zen-headers
     elif [[ "${kernel}" == *"lts"* ]]; then
         # LTS
         logMessage "info" "Detected Kernel: linux-lts"
-        sudo pacman -S --needed --noconfirm linux-lts-headers || logMessage "error" "Could not install kernel modules."
+        sudo pacman -S --needed --noconfirm linux-lts-headers
     elif [[ "$kernel" == *"hardened"* ]]; then
         # "HARDENED" ~Debitor
         logMessage "info" "Detected Kernel: linux-hardened"
-        sudo pacman -S --needed --noconfirm linux-hardened-headers || logMessage "error" "Could not install kernel modules."
+        sudo pacman -S --needed --noconfirm linux-hardened-headers
     else
         # Regular Linux Kernel
         logMessage "info" "Detected Kernel: linux"
-        sudo pacman -S --needed --noconfirm linux-headers || logMessage "error" "Could not install kernel modules."
+        sudo pacman -S --needed --noconfirm linux-headers
     fi
     logMessage "info" "Installed Kernel Modules."
 }
