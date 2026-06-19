@@ -615,14 +615,12 @@ installNvidiaPackages() {
         sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils opencl-nvidia nvidia-settings libglvnd lib32-nvidia-utils lib32-opencl-nvidia egl-wayland
         ;;
     "nvidia-580xx-dkms")
-        # NOTE:
-        # The chaotic aur does not have the nvidia-580xx-settings package yet.
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
             aurHelperInstall "nvidia-580xx-dkms nvidia-580xx-utils opencl-nvidia-580xx nvidia-580xx-settings libglvnd lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx egl-wayland"
         else
             checkChaoticAur
-            sudo pacman -S --needed --noconfirm nvidia-580xx-dkms nvidia-580xx-utils opencl-nvidia-580xx libglvnd lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx egl-wayland
+            sudo pacman -S --needed --noconfirm nvidia-580xx-dkms nvidia-580xx-utils opencl-nvidia-580xx nvidia-580xx-settings libglvnd lib32-nvidia-580xx-utils lib32-opencl-nvidia-580xx egl-wayland
         fi
         ;;
     "nvidia-470xx-dkms")
@@ -647,6 +645,9 @@ installNvidiaPackages() {
         fi
         ;;
     "nvidia-340xx-dkms")
+        # NOTE:
+        # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
+        # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
         if [[ "${legacyMode}" == "true" ]]; then
             checkAurHelper
             aurHelperInstall "nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd lib32-nvidia-340xx-utils lib32-opencl-nvidia-340xx egl-wayland"
@@ -656,8 +657,6 @@ installNvidiaPackages() {
             checkChaoticAur
             sudo pacman -S --needed --noconfirm nvidia-340xx-dkms nvidia-340xx-utils opencl-nvidia-340xx libglvnd egl-wayland
         fi
-        # The nvidia-340xx-settings fails to install because its denied access to /usr/local/share/man/ ...
-        # Also testing this driver in a vm resulted in alacritty not starting anymore. (╯°□°)╯︵ ┻━┻
         ;;
     *)
         logMessage "error" "No package provided for installation."
